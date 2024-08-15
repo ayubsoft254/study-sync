@@ -7,5 +7,9 @@ app = Flask(__name__)
 def home():
     return render_template('index.html', message='Welcome to StudySync!')
 
+@app.route('/list')
+def list():
+    return render_template('index.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
