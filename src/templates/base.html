@@ -7,12 +7,12 @@
 </head>
 <body>
     <nav>
-        {% comment %} <ul>
-            <li><a href="{{ url_for('home') }}">Home</a></li>
-            <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ url_for('mentorship') }}">Mentorship</a></li>
-            <li><a href="{{ url_for('chat') }}">Chat</a></li>
-        </ul> {% endcomment %}
+        <ul>
+            <li><a href="{% url 'home_view' %}">Home</a></li>
+            <li><a href="{% url 'home_view' %}">Dashboard</a></li>
+            <li><a href="{% url 'home_view' %}">Mentorship</a></li>
+            <li><a href="{% url 'home_view' %}">Chat</a></li>
+        </ul>
     </nav>
     <div class="content">
         {% block content %}{% endblock %}
