@@ -1,9 +1,11 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.db.models import Q, Avg
-from .models import *
-
+from django.core.exceptions import PermissionDenied
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
 
 # Create your views here.
 def home_view(request):
@@ -91,3 +93,107 @@ def create_private_chat(request, student_id):
     chat_room.participants.add(user_profile, other_student)
     
     return redirect('studysync:chat_room', room_id=chat_room.id)
+
+def university_signup(request):
+    if request.method == 'POST':
+        form = UniversitySignupForm(request.POST, request.FILES)
+        if form.is_valid():
+            university = form.save(commit=False)
+            university.save()
+            messages.success(request, 'University registration submitted for verification.')
+            return redirect('university_signup_success')
+    else:
+        form = UniversitySignupForm()
+    
+    return render(request, 'studysync/university_signup.html', {'form': form})
+
+def student_signup(request):
+    if request.method == 'POST':
+        form = StudentSignupForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            university_email = form.cleaned_data['university_email']
+            
+            # Verify university email domain
+            email_domain = university_email.split('@')[1]
+            university = get_object_or_404(University, domain=email_domain)
+            
+            user.save()
+            
+            # Create student profile
+            profile = StudentProfile.objects.create(
+                user=user,
+                university=university,
+                department=form.cleaned_data['department'],
+                student_id=form.cleaned_data['student_id'],
+                year_of_study=form.cleaned_data['year_of_study']
+            )
+            
+            # Send verification email
+            send_verification_email(user, university_email)
+            
+            messages.success(request, 'Please check your university email for verification.')
+            return redirect('email_verification_sent')
+    else:
+        form = StudentSignupForm()
+    
+    return render(request, 'studysync/student_signup.html', {'form': form})
+
+@login_required
+def resource_list(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    resources = Resource.objects.filter(course=course).order_by('-created_at')
+    
+    context = {
+        'course': course,
+        'resources': resources,
+    }
+    return render(request, 'studysync/resource_list.html', context)
+
+@login_required
+def upload_resource(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        form = ResourceUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            resource = form.save(commit=False)
+            resource.course = course
+            resource.uploaded_by = request.user.studentprofile
+            resource.save()
+            messages.success(request, 'Resource uploaded successfully!')
+            return redirect('resource_list', course_id=course_id)
+    else:
+        form = ResourceUploadForm()
+    
+    return render(request, 'studysync/upload_resource.html', {
+        'form': form,
+        'course': course
+    })
+
+@login_required
+def resource_detail(request, resource_id):
+    resource = get_object_or_404(Resource, id=resource_id)
+    
+    # Increment view count
+    resource.views += 1
+    resource.save()
+    
+    if request.method == 'POST':
+        comment_form = ResourceCommentForm(request.POST)
+        if comment_form.is_valid():
+            comment = comment_form.save(commit=False)
+            comment.resource = resource
+            comment.author = request.user.studentprofile
+            comment.save()
+            messages.success(request, 'Comment added successfully!')
+            return redirect('resource_detail', resource_id=resource_id)
+    else:
+        comment_form = ResourceCommentForm()
+    
+    context = {
+        'resource': resource,
+        'comments': resource.comments.all().order_by('-created_at'),
+        'comment_form': comment_form,
+    }
+    return render(request, 'studysync/resource_detail.html', context)

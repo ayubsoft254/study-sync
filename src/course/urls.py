@@ -9,4 +9,6 @@ urlpatterns = [
     path('courses/', views.course_list, name='course_list'),
     path('profile/', views.profile, name='profile'),
     path('feedback/<int:session_id>/', views.submit_feedback, name='submit_feedback'),
+    path('chat/<uuid:room_id>/', views.chat_room, name='chat_room'),
+    path('chat/create/<int:student_id>/', views.create_private_chat, name='create_private_chat'),
 ]
