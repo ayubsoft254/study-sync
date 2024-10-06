@@ -6,6 +6,10 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
+from django.http import JsonResponse
+from django.db.models import Q
+from .models import StudySession, ChatRoom, Resource, Course, StudentProfile, ChatRoom, University
+from .forms import UniversitySignupForm, StudentSignupForm, ResourceUploadForm, ResourceCommentForm
 
 # Create your views here.
 def home_view(request):
@@ -130,7 +134,7 @@ def student_signup(request):
             )
             
             # Send verification email
-            send_verification_email(user, university_email)
+            send_verification_email(user, university_email) 
             
             messages.success(request, 'Please check your university email for verification.')
             return redirect('email_verification_sent')

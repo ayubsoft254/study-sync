@@ -20,6 +20,45 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.university}"
+    
+class University(models.Model):
+    name = models.CharField(max_length=255)
+    domain = models.CharField(max_length=100, unique=True)  # e.g., 'harvard.edu'
+    description = models.TextField()
+    logo = models.ImageField(upload_to='university_logos/', null=True, blank=True)
+    verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "universities"
+
+    def __str__(self):
+        return self.name
+
+class Department(models.Model):
+    university = models.ForeignKey(University, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=10)  # e.g., 'CS', 'MATH'
+
+    def __str__(self):
+        return f"{self.code} - {self.name} ({self.university.name})"
+
+    
+class StudentProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    university = models.ForeignKey(University, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    student_id = models.CharField(max_length=50)
+    year_of_study = models.IntegerField()
+    bio = models.TextField(blank=True)
+    courses = models.ManyToManyField('Course', related_name='students')
+    mentor_rating = models.FloatField(default=0.0)
+    is_available_as_mentor = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.university.name}"
 
 class StudySession(models.Model):
     STATUS_CHOICES = [
@@ -100,44 +139,6 @@ class Message(models.Model):
     def __str__(self):
         return f"{self.sender.user.username}: {self.content[:50]}"
     
-class University(models.Model):
-    name = models.CharField(max_length=255)
-    domain = models.CharField(max_length=100, unique=True)  # e.g., 'harvard.edu'
-    description = models.TextField()
-    logo = models.ImageField(upload_to='university_logos/', null=True, blank=True)
-    verified = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = "universities"
-
-    def __str__(self):
-        return self.name
-
-class Department(models.Model):
-    university = models.ForeignKey(University, on_delete=models.CASCADE)
-    name = models.CharField(max_length=255)
-    code = models.CharField(max_length=10)  # e.g., 'CS', 'MATH'
-
-    def __str__(self):
-        return f"{self.code} - {self.name} ({self.university.name})"
-
-# Extend previous StudentProfile model
-class StudentProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    university = models.ForeignKey(University, on_delete=models.CASCADE)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    student_id = models.CharField(max_length=50)
-    year_of_study = models.IntegerField()
-    bio = models.TextField(blank=True)
-    courses = models.ManyToManyField('Course', related_name='students')
-    mentor_rating = models.FloatField(default=0.0)
-    is_available_as_mentor = models.BooleanField(default=False)
-    email_verified = models.BooleanField(default=False)
-    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.user.username} - {self.university.name}"
 
 class Resource(models.Model):
     RESOURCE_TYPES = [

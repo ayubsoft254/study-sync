@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.validators import EmailValidator
+from .models import University, Department, User, Resource, ResourceComment
+from .widgets import CustomClearableFileInput
 
 class UniversitySignupForm(forms.ModelForm):
     class Meta:
