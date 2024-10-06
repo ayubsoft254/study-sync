@@ -29,7 +29,7 @@ def dashboard(request):
         'enrolled_courses': user_profile.courses.all(),
         'mentor_rating': user_profile.mentor_rating,
     }
-    return render(request, 'studysync/dashboard.html', context)
+    return render(request, 'base.html', context)
 
 @login_required
 def create_study_session(request):
