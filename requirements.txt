@@ -14,3 +14,7 @@ celery
 psycopg2-binary
 django-storages
 boto3
+django-allauth[socialaccount]
+django-allauth-ui
+django-widget-tweaks
+slippers

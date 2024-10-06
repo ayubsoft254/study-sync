@@ -13,6 +13,7 @@ def home_view(request):
 
     return render(request, 'course/home.html', {})
 
+@login_required
 def dashboard(request):
     user_profile = request.user.studentprofile
     upcoming_sessions = StudySession.objects.filter(
