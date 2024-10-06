@@ -1,4 +1,171 @@
-{% extends "base.html" %}
-{% block content %}
-<h1>welcome to studysync</h1>
-{% endblock content %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudySync - Cross-University Learning Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg fixed w-full z-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'home' %}" class="text-2xl font-bold text-indigo-600">StudySync</a>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="#features" class="text-gray-700 hover:text-indigo-600">Features</a>
+                    <a href="#how-it-works" class="text-gray-700 hover:text-indigo-600">How it Works</a>
+                    <a href="#testimonials" class="text-gray-700 hover:text-indigo-600">Testimonials</a>
+                    <a href="{% url 'account_signup' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg pt-32 pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center" data-aos="fade-up">
+                <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
+                    Connect, Learn, and Grow Together
+                </h1>
+                <p class="text-xl text-gray-200 mb-8">
+                    Bridge curriculum gaps and enhance your learning through AI-powered peer connections across universities
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="{% url 'account_signup' %}" class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100">
+                        Join StudySync
+                    </a>
+                    <a href="#how-it-works" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-indigo-600">
+                        Learn More
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-12">Why Choose StudySync?</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md" data-aos="fade-up">
+                    <div class="text-indigo-600 text-4xl mb-4">🤝</div>
+                    <h3 class="text-xl font-semibold mb-2">Peer Connection</h3>
+                    <p class="text-gray-600">Connect with students from different universities studying the same courses.</p>
+                </div>
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="100">
+                    <div class="text-indigo-600 text-4xl mb-4">🤖</div>
+                    <h3 class="text-xl font-semibold mb-2">AI-Driven Matching</h3>
+                    <p class="text-gray-600">Get matched with the perfect study partners based on your learning needs.</p>
+                </div>
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="200">
+                    <div class="text-indigo-600 text-4xl mb-4">📚</div>
+                    <h3 class="text-xl font-semibold mb-2">Knowledge Sharing</h3>
+                    <p class="text-gray-600">Share resources and insights to fill curriculum gaps effectively.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-12">How StudySync Works</h2>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center" data-aos="fade-right">
+                    <div class="text-3xl mb-4">1️⃣</div>
+                    <h3 class="font-semibold mb-2">Create Profile</h3>
+                    <p class="text-gray-600">Sign up and tell us about your courses and learning goals</p>
+                </div>
+                <div class="text-center" data-aos="fade-right" data-aos-delay="100">
+                    <div class="text-3xl mb-4">2️⃣</div>
+                    <h3 class="font-semibold mb-2">Get Matched</h3>
+                    <p class="text-gray-600">Our AI matches you with compatible study partners</p>
+                </div>
+                <div class="text-center" data-aos="fade-right" data-aos-delay="200">
+                    <div class="text-3xl mb-4">3️⃣</div>
+                    <h3 class="font-semibold mb-2">Collaborate</h3>
+                    <p class="text-gray-600">Connect and study together through our platform</p>
+                </div>
+                <div class="text-center" data-aos="fade-right" data-aos-delay="300">
+                    <div class="text-3xl mb-4">4️⃣</div>
+                    <h3 class="font-semibold mb-2">Grow Together</h3>
+                    <p class="text-gray-600">Learn from each other and improve your understanding</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="gradient-bg py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-white mb-6">Ready to Transform Your Learning Experience?</h2>
+            <p class="text-xl text-gray-200 mb-8">Join thousands of students already using StudySync to enhance their education</p>
+            <a href="{% url 'account_signup' %}" class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100">
+                Get Started For Free
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">StudySync</h3>
+                    <p class="text-gray-400">Connecting learners across universities</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-400 hover:text-white">Features</a></li>
+                        <li><a href="#how-it-works" class="text-gray-400 hover:text-white">How it Works</a></li>
+                        <li><a href="#testimonials" class="text-gray-400 hover:text-white">Testimonials</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Connect With Us</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">Twitter</a>
+                        <a href="#" class="text-gray-400 hover:text-white">LinkedIn</a>
+                        <a href="#" class="text-gray-400 hover:text-white">Instagram</a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p class="text-gray-400">&copy; {% now "Y" %} StudySync. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+    </script>
+</body>
+</html>

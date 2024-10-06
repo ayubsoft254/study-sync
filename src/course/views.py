@@ -8,7 +8,7 @@ from .models import StudySession, ChatRoom, Resource, Course, StudentProfile, Ch
 from .forms import ResourceUploadForm, ResourceCommentForm
 
 # Create your views here.
-def home_view(request):
+def home(request):
 
 
     return render(request, 'course/home.html', {})
@@ -26,7 +26,7 @@ def dashboard(request):
         'enrolled_courses': user_profile.courses.all(),
         'mentor_rating': user_profile.mentor_rating,
     }
-    return render(request, 'base.html', context)
+    return render(request, 'course/dashboard.html', context)
 
 @login_required
 def create_study_session(request):
@@ -67,7 +67,7 @@ def chat_room(request, room_id):
         'room': room,
         'messages': messages,
     }
-    return render(request, 'studysync/chat_room.html', context)
+    return render(request, 'course/chat.html', context)
 
 @login_required
 def create_private_chat(request, student_id):
