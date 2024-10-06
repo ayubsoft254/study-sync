@@ -1,6 +1,8 @@
 from django.urls import path
 from course import views
 
+
+
 urlpatterns = [
     path('', views.home, name='home'),
     path('dashboard', views.dashboard, name='dashboard'),
@@ -9,4 +11,6 @@ urlpatterns = [
     path('session/<int:session_id>/join/', views.join_session, name='join_session'),
     path('chat/<uuid:room_id>/', views.chat_room, name='chat_room'),
     path('chat/create/<int:student_id>/', views.create_private_chat, name='create_private_chat'),
+    #url for creating a chatroom
+    
 ]

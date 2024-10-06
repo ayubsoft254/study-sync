@@ -59,6 +59,12 @@ def join_session(request, session_id):
     return JsonResponse({'status': 'error'}, status=405)
 
 @login_required
+#\\create a view for creating a chat room from the chatroom  model
+
+
+
+
+
 def chat_room(request, room_id):
     room = get_object_or_404(ChatRoom, id=room_id)
     messages = room.messages.all().select_related('sender__user')[:100]
@@ -68,6 +74,15 @@ def chat_room(request, room_id):
         'messages': messages,
     }
     return render(request, 'course/chat.html', context)
+
+@login_required
+def create_public_chat(request):
+    chat_room = ChatRoom.objects.create(
+        name="Public Room",
+        room_type='public'
+    )
+    return redirect('chat_room', room_id=chat_room.id)
+
 
 @login_required
 def create_private_chat(request, student_id):
