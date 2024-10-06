@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 import uuid
+from django.core.validators import FileExtensionValidator
 
 class Subject(models.Model):
     name = models.CharField(max_length=100)

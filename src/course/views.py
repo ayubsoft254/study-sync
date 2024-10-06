@@ -134,7 +134,7 @@ def student_signup(request):
             )
             
             # Send verification email
-            send_verification_email(user, university_email) 
+            #send_verification_email(user, university_email) 
             
             messages.success(request, 'Please check your university email for verification.')
             return redirect('email_verification_sent')
@@ -201,3 +201,7 @@ def resource_detail(request, resource_id):
         'comment_form': comment_form,
     }
     return render(request, 'studysync/resource_detail.html', context)
+
+@login_required
+def session_detail(request):
+    return render(request, 'studysync/resource_detail.html')
