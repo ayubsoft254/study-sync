@@ -55,3 +55,39 @@ def join_session(request, session_id):
             return JsonResponse({'status': 'success'})
         return JsonResponse({'status': 'full'}, status=400)
     return JsonResponse({'status': 'error'}, status=405)
+
+@login_required
+def chat_room(request, room_id):
+    room = get_object_or_404(ChatRoom, id=room_id)
+    messages = room.messages.all().select_related('sender__user')[:100]
+    
+    context = {
+        'room': room,
+        'messages': messages,
+    }
+    return render(request, 'studysync/chat_room.html', context)
+
+@login_required
+def create_private_chat(request, student_id):
+    other_student = get_object_or_404(StudentProfile, id=student_id)
+    user_profile = request.user.studentprofile
+    
+    # Check if chat already exists
+    existing_chat = ChatRoom.objects.filter(
+        room_type='private',
+        participants=user_profile
+    ).filter(
+        participants=other_student
+    ).first()
+    
+    if existing_chat:
+        return redirect('studysync:chat_room', room_id=existing_chat.id)
+    
+    # Create new chat room
+    chat_room = ChatRoom.objects.create(
+        name=f"Chat between {user_profile.user.username} and {other_student.user.username}",
+        room_type='private'
+    )
+    chat_room.participants.add(user_profile, other_student)
+    
+    return redirect('studysync:chat_room', room_id=chat_room.id)

@@ -1,8 +1,7 @@
 from django.db import models
-
-# Create your models here.
 from django.contrib.auth.models import User
 from django.utils import timezone
+import uuid
 
 class Subject(models.Model):
     name = models.CharField(max_length=100)
@@ -66,3 +65,50 @@ class SessionFeedback(models.Model):
 
     class Meta:
         unique_together = ['session', 'from_user', 'to_user']
+
+    def __str__(self):
+        return f"{self.session.title} - {self.rating}"
+
+class ChatRoom(models.Model):
+    ROOM_TYPES = [
+        ('session', 'Study Session Chat'),
+        ('course', 'Course Discussion'),
+        ('private', 'Private Chat'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    room_type = models.CharField(max_length=20, choices=ROOM_TYPES)
+    participants = models.ManyToManyField(StudentProfile, related_name='chat_rooms')
+    study_session = models.OneToOneField(
+        StudySession,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='chat_room'
+    )
+    course = models.ForeignKey(
+        Course,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='chat_rooms'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.room_type})"
+
+class Message(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_system_message = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['timestamp']
+    
+    def __str__(self):
+        return f"{self.sender.user.username}: {self.content[:50]}"
+    
