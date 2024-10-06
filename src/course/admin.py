@@ -8,3 +8,4 @@ admin.site.register(Resource)
 admin.site.register(Course)
 admin.site.register(StudentProfile)
 admin.site.register(University)
+
