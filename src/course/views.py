@@ -46,7 +46,7 @@ def create_study_session(request):
         return redirect('session_detail', session_id=session.id)
     
     courses = request.user.studentprofile.courses.all()
-    return render(request, 'studysync/create_session.html', {'courses': courses})
+    return render(request, 'course/create_session.html', {'courses': courses})
 
 @login_required
 def join_session(request, session_id):

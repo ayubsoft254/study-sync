@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+<style>
+    .form-section {
+        transition: all 0.3s ease;
+    }
+    .form-section:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Create Study Session</h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Share your knowledge and help others learn by creating a study session.
+            </p>
+        </div>
+
+        <!-- Form -->
+        <form method="POST" class="space-y-8" id="studySessionForm">
+            {% csrf_token %}
+            
+            <!-- Course Selection -->
+            <div class="form-section bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Select Course</h2>
+                <div class="space-y-4">
+                    {% if courses %}
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            {% for course in courses %}
+                                <label class="relative flex p-4 bg-white border rounded-lg cursor-pointer hover:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500">
+                                    <input type="radio" name="course_id" value="{{ course.id }}" class="sr-only" required>
+                                    <div class="flex-1">
+                                        <span class="block text-sm font-medium text-gray-900">{{ course.name }}</span>
+                                        <span class="block text-sm text-gray-500">{{ course.code }}</span>
+                                    </div>
+                                    <div class="absolute -inset-px rounded-lg border-2 pointer-events-none" aria-hidden="true"></div>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-gray-500">No courses available.</p>
+                            <a href="{% url 'enroll_course' %}" class="mt-2 inline-flex items-center text-indigo-600 hover:text-indigo-900">
+                                Enroll in a course
+                                <svg class="ml-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Session Details -->
+            <div class="form-section bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Session Details</h2>
+                <div class="space-y-6">
+                    <!-- Title -->
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700">Session Title</label>
+                        <input type="text" name="title" id="title" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                               placeholder="e.g., Advanced Calculus Problem Solving">
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea name="description" id="description" rows="4" required
+                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                  placeholder="Describe what you'll cover in this session..."></textarea>
+                    </div>
+
+                    <!-- Schedule -->
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                            <label for="scheduled_time" class="block text-sm font-medium text-gray-700">Date & Time</label>
+                            <input type="text" name="scheduled_time" id="scheduled_time" required
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                   placeholder="Select date and time">
+                        </div>
+                        <div>
+                            <label for="duration" class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                            <select name="duration" id="duration" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60" selected>1 hour</option>
+                                <option value="90">1.5 hours</option>
+                                <option value="120">2 hours</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Participants -->
+                    <div>
+                        <label for="max_participants" class="block text-sm font-medium text-gray-700">Maximum Participants</label>
+                        <select name="max_participants" id="max_participants" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="1">1 student</option>
+                            <option value="2">2 students</option>
+                            <option value="3">3 students</option>
+                            <option value="4">4 students</option>
+                            <option value="5">5 students</option>
+                            <option value="10">10 students</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'dashboard' %}" 
+                   class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Create Session
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize datetime picker
+    flatpickr("#scheduled_time", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: "today",
+        minTime: "08:00",
+        maxTime: "22:00",
+        time_24hr: true
+    });
+
+    // Form validation
+    const form = document.getElementById('studySessionForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate course selection
+        const courseSelected = form.querySelector('input[name="course_id"]:checked');
+        if (!courseSelected) {
+            alert('Please select a course');
+            return;
+        }
+
+        // Validate scheduled time
+        const scheduledTime = new Date(form.scheduled_time.value);
+        const now = new Date();
+        if (scheduledTime <= now) {
+            alert('Please select a future date and time');
+            return;
+        }
+
+        // If all validations pass, submit the form
+        form.submit();
+    });
+
+    // Course selection highlighting
+    const courseInputs = document.querySelectorAll('input[name="course_id"]');
+    courseInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            courseInputs.forEach(inp => {
+                const label = inp.closest('label');
+                if (inp.checked) {
+                    label.classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500');
+                } else {
+                    label.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500');
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
