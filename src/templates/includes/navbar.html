@@ -1,3 +1,4 @@
+{% load static %}
 <nav class="bg-white shadow-lg">
     <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between h-16">
@@ -27,7 +28,7 @@
                     <div class="ml-3 relative">
                         <div>
                             <button type="button" class="profile-dropdown-button bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
-                                <img class="h-8 w-8 rounded-full" src="" alt="">
+                                <img class="h-8 w-8 rounded-full" src="{{ user.studentprofile.profile_picture.url|default:'/static/img/default-avatar.png' }}" alt="">
                             </button>
                         </div>
                         <div class="profile-dropdown-menu hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
