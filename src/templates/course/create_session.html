@@ -2,7 +2,10 @@
 {% load static %}
 
 {% block extra_head %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Tailwind CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
 <style>
     .form-section {
         transition: all 0.3s ease;
@@ -133,24 +136,29 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize datetime picker
-    flatpickr("#scheduled_time", {
-        enableTime: true,
-        dateFormat: "Y-m-d H:i",
-        minDate: "today",
-        minTime: "08:00",
-        maxTime: "22:00",
-        time_24hr: true
-    });
+    // Initialize datetime picker for scheduled_time input
+    const scheduledTimeInput = document.querySelector("#scheduled_time");
+    if (scheduledTimeInput) {
+        flatpickr(scheduledTimeInput, {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: "today",  // Disable past dates
+            minTime: "08:00",  // Earliest time available
+            maxTime: "22:00",  // Latest time available
+            time_24hr: true    // Use 24-hour time format
+        });
+    } else {
+        console.error("scheduled_time input not found");
+    }
 
-    // Form validation
+    // Course selection form validation
     const form = document.getElementById('studySessionForm');
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         // Validate course selection
         const courseSelected = form.querySelector('input[name="course_id"]:checked');
         if (!courseSelected) {
@@ -158,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Validate scheduled time
+        // Validate future scheduled time
         const scheduledTime = new Date(form.scheduled_time.value);
         const now = new Date();
         if (scheduledTime <= now) {
@@ -170,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
         form.submit();
     });
 
-    // Course selection highlighting
+    // Add highlighting to course selection
     const courseInputs = document.querySelectorAll('input[name="course_id"]');
     courseInputs.forEach(input => {
         input.addEventListener('change', function() {

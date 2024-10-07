@@ -15,13 +15,14 @@ def home(request):
 
 @login_required
 def dashboard(request):
-    user_profile = request.user.studentprofile
+    user_profile = request.user.studentprofile  # Retrieve the student profile
     upcoming_sessions = StudySession.objects.filter(
         Q(mentor=user_profile) | Q(students=user_profile),
         status='scheduled'
     ).order_by('scheduled_time')
     
     context = {
+        'user_profile': user_profile,  # Pass the student profile to the context
         'upcoming_sessions': upcoming_sessions,
         'enrolled_courses': user_profile.courses.all(),
         'mentor_rating': user_profile.mentor_rating,
@@ -98,7 +99,7 @@ def create_private_chat(request, student_id):
     ).first()
     
     if existing_chat:
-        return redirect('studysync:chat_room', room_id=existing_chat.id)
+        return redirect('course:chat_room', room_id=existing_chat.id)
     
     # Create new chat room
     chat_room = ChatRoom.objects.create(
@@ -107,7 +108,7 @@ def create_private_chat(request, student_id):
     )
     chat_room.participants.add(user_profile, other_student)
     
-    return redirect('studysync:chat_room', room_id=chat_room.id)
+    return redirect('course:chat_room', room_id=chat_room.id)
 
 @login_required
 def resource_list(request, course_id):
@@ -118,7 +119,7 @@ def resource_list(request, course_id):
         'course': course,
         'resources': resources,
     }
-    return render(request, 'studysync/resource_list.html', context)
+    return render(request, 'course/resource_list.html', context)
 
 @login_required
 def upload_resource(request, course_id):
@@ -136,7 +137,7 @@ def upload_resource(request, course_id):
     else:
         form = ResourceUploadForm()
     
-    return render(request, 'studysync/upload_resource.html', {
+    return render(request, 'course/upload_resource.html', {
         'form': form,
         'course': course
     })
@@ -166,8 +167,14 @@ def resource_detail(request, resource_id):
         'comments': resource.comments.all().order_by('-created_at'),
         'comment_form': comment_form,
     }
-    return render(request, 'studysync/resource_detail.html', context)
+    return render(request, 'course/resource_detail.html', context)
 
 @login_required
-def session_detail(request):
-    return render(request, 'studysync/resource_detail.html')
+def session_detail(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id)
+    context = {
+        'session': session,
+        'mentor': session.mentor,
+        'students': session.students.all(),
+    }
+    return render(request, 'course/session_detail.html', context)
