@@ -12,6 +12,7 @@ urlpatterns = [
     path('chat/<int:room_id>/', views.chat_room, name='chat_room'),
     path('chat/create/public/', views.create_public_chat, name='create_public_chat'),
     path('chat/create/private/<int:student_id>/', views.create_private_chat, name='create_private_chat'),
+    path('chat/<uuid:room_id>/', views.chat_room, name='chat_room'),
     
     # Resource URLs
     path('course/<int:course_id>/resources/', views.resource_list, name='resource_list'),
