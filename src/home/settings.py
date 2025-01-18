@@ -154,6 +154,12 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',    
 ]
 
+ACCOUNT_FORMS = {
+    'signup': 'app.forms.CustomSignupForm',
+}
+
+
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
