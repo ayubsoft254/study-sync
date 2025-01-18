@@ -8,45 +8,57 @@ from .models import *
 from django.utils import timezone
 from django.contrib import messages
 import uuid
+from django.db.models import Avg
+
 
 def home(request):
     return render(request, 'app/home.html')
 
 def dashboard(request, username):
-    # Check if user is authenticated
-    if not request.user.is_authenticated:
-        messages.warning(request, "Please login to access the dashboard.")
-        return redirect('account_login')  # Replace 'login' with your login URL name
-    
-    # Get the profile user or return 404
+           
+    # Fetch the profile user or return 404 if not found
     profile_user = get_object_or_404(User, username=username)
     
-    # Redirect to their own dashboard if trying to access another user's dashboard
+    # Redirect users trying to access another user's dashboard
     if request.user != profile_user:
         messages.warning(request, "Redirected to your dashboard.")
         return redirect('app:dashboard', username=request.user.username)
     
-    context = {
-        'user': profile_user
-    }
+    # Common context for the dashboard
+    context = {'user': profile_user}
     
     if hasattr(profile_user, 'mentee'):
-        # Mentee dashboard
+        # Mentee-specific context
+        mentee = profile_user.mentee 
+        avg_rating = MentorRating.objects.filter(mentor=mentor).aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+        participant_count = MentorSession.objects.filter(mentor=mentor).values('participants').distinct().count()
+        
         context.update({
-            'resources': Resource.objects.filter(course=profile_user.mentee.course),
+            'resources': Resource.objects.filter(course=mentee.course).select_related('course'),
             'upcoming_sessions': MentorSession.objects.filter(
                 participants=profile_user,
                 scheduled_time__gt=timezone.now()
-            ),
-            'attended_sessions': SessionAttendance.objects.filter(mentee=profile_user),
+            ).select_related('mentor'),
+            'attended_sessions': SessionAttendance.objects.filter(
+                mentee=mentee
+            ).select_related('session__mentor'),
+
+            'avg_rating': avg_rating,  # Add the average rating to the context
+            'participant_count': participant_count,  # Add the participant count to the context
         })
-    else:
-        # Mentor dashboard
+    elif hasattr(profile_user, 'mentor'):
+        # Mentor-specific context
+        mentor = profile_user.mentor  # Access the Mentor object
         context.update({
-            'created_sessions': MentorSession.objects.filter(mentor=profile_user),
-            'ratings': MentorRating.objects.filter(mentor=profile_user),
+            'created_sessions': MentorSession.objects.filter(mentor=mentor).prefetch_related('participants'),
+            'ratings': MentorRating.objects.filter(mentor=mentor).select_related('mentee', 'session'),
         })
-    
+    # else:
+    #     # Default for users without mentee or mentor roles
+    #     messages.info(request, "Your account is not yet configured for dashboard access.")
+    #     return redirect('account_profile')  # Adjust the redirect URL as needed
+
+    # Render the dashboard with the context
     return render(request, 'app/dashboard.html', context)
 
 class MentorSessionCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
