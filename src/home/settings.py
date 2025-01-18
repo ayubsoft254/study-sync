@@ -57,7 +57,14 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
+    'django.contrib.staticfiles',    
+    'channels',  # For WebSocket support
+    'rest_framework',
+    'studysync.core',
+    'studysync.chat',
+    'studysync.calls',
+    'studysync.mentoring',
+    'studysync.resources',
 
     #my apps
     'course',
