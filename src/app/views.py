@@ -8,6 +8,9 @@ from .models import *
 from django.utils import timezone
 import uuid
 
+def home(request):
+    return render(request, 'app/home.html')
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -32,12 +35,12 @@ def dashboard(request):
             'ratings': MentorRating.objects.filter(mentor=user),
         })
     
-    return render(request, 'studysync/dashboard.html', context)
+    return render(request, 'app/dashboard.html', context)
 
 class MentorSessionCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = MentorSession
     fields = ['title', 'description', 'scheduled_time', 'duration', 'max_participants']
-    template_name = 'studysync/mentor_session_form.html'
+    template_name = 'app/mentor_session_form.html'
     
     def test_func(self):
         return self.request.user.is_mentor
@@ -76,7 +79,7 @@ def create_chat(request):
 class ResourceCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Resource
     fields = ['title', 'description', 'file', 'course']
-    template_name = 'studysync/resource_form.html'
+    template_name = 'app/resource_form.html'
     
     def test_func(self):
         return self.request.user.is_mentor
