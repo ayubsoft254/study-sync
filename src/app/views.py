@@ -6,33 +6,45 @@ from django.views.generic import ListView, CreateView, DetailView
 from django.http import JsonResponse
 from .models import *
 from django.utils import timezone
+from django.contrib import messages
 import uuid
 
 def home(request):
     return render(request, 'app/home.html')
 
-@login_required
-def dashboard(request):
-    user = request.user
+def dashboard(request, username):
+    # Check if user is authenticated
+    if not request.user.is_authenticated:
+        messages.warning(request, "Please login to access the dashboard.")
+        return redirect('account_login')  # Replace 'login' with your login URL name
+    
+    # Get the profile user or return 404
+    profile_user = get_object_or_404(User, username=username)
+    
+    # Redirect to their own dashboard if trying to access another user's dashboard
+    if request.user != profile_user:
+        messages.warning(request, "Redirected to your dashboard.")
+        return redirect('app:dashboard', username=request.user.username)
+    
     context = {
-        'user': user
+        'user': profile_user
     }
     
-    if hasattr(user, 'mentee'):
+    if hasattr(profile_user, 'mentee'):
         # Mentee dashboard
         context.update({
-            'resources': Resource.objects.filter(course=user.mentee.course),
+            'resources': Resource.objects.filter(course=profile_user.mentee.course),
             'upcoming_sessions': MentorSession.objects.filter(
-                participants=user,
+                participants=profile_user,
                 scheduled_time__gt=timezone.now()
             ),
-            'attended_sessions': SessionAttendance.objects.filter(mentee=user),
+            'attended_sessions': SessionAttendance.objects.filter(mentee=profile_user),
         })
     else:
         # Mentor dashboard
         context.update({
-            'created_sessions': MentorSession.objects.filter(mentor=user),
-            'ratings': MentorRating.objects.filter(mentor=user),
+            'created_sessions': MentorSession.objects.filter(mentor=profile_user),
+            'ratings': MentorRating.objects.filter(mentor=profile_user),
         })
     
     return render(request, 'app/dashboard.html', context)

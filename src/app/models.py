@@ -1,25 +1,7 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-class User(AbstractUser):
-    """
-    Custom User model with additional fields for mentors and mentees.
-    """
-    is_mentor = models.BooleanField(default=False)
-    bio = models.TextField(blank=True)
-    profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
-
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='custom_user_set',  # Change the related_name
-        blank=True,
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='custom_user_permissions_set',  # Change the related_name
-        blank=True,
-    )
 
 class School(models.Model):
     """
@@ -30,6 +12,7 @@ class School(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Course(models.Model):
     """
@@ -43,6 +26,7 @@ class Course(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
+
 class Mentee(models.Model):
     """
     Mentee-specific data extending the base User model.
@@ -55,6 +39,7 @@ class Mentee(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.course.name}"
 
+
 class Mentor(models.Model):
     """
     Mentor-specific data extending the base User model.
@@ -65,6 +50,7 @@ class Mentor(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Mentor"
+
 
 class Resource(models.Model):
     """
@@ -79,6 +65,7 @@ class Resource(models.Model):
 
     def __str__(self):
         return self.title
+
 
 class Chat(models.Model):
     """
@@ -95,6 +82,7 @@ class Chat(models.Model):
     def __str__(self):
         return f"Chat ({self.chat_type})"
 
+
 class Message(models.Model):
     """
     Messages within a chat.
@@ -106,6 +94,7 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username}"
+
 
 class Call(models.Model):
     """
@@ -124,6 +113,7 @@ class Call(models.Model):
     def __str__(self):
         return f"Call ({self.call_type})"
 
+
 class MentorSession(models.Model):
     """
     Represents mentoring sessions hosted by mentors.
@@ -139,6 +129,7 @@ class MentorSession(models.Model):
     def __str__(self):
         return self.title
 
+
 class SessionAttendance(models.Model):
     """
     Tracks attendance of mentees in mentor sessions.
@@ -150,6 +141,7 @@ class SessionAttendance(models.Model):
 
     def __str__(self):
         return f"Attendance for {self.session.title} - {self.mentee.user.username}"
+
 
 class MentorRating(models.Model):
     """
@@ -164,3 +156,4 @@ class MentorRating(models.Model):
 
     def __str__(self):
         return f"Rating for {self.mentor.user.username} by {self.mentee.user.username}"
+
