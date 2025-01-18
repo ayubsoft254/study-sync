@@ -60,14 +60,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',    
     'channels',  # For WebSocket support
     'rest_framework',
-    'studysync.core',
-    'studysync.chat',
-    'studysync.calls',
-    'studysync.mentoring',
-    'studysync.resources',
+    
+    
 
     #my apps
-    'course',
+    'app',
+
 
     #third-part apps
     'allauth_ui',

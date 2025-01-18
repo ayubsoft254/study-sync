@@ -5,7 +5,7 @@ app_name = 'app'
 
 urlpatterns = [    
     path('', views.home, name='home'),
-    path('/dashboard', views.dashboard, name='dashboard'),
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('session/create/', views.MentorSessionCreate.as_view(), name='create_session'),
     path('call/start/<int:user_id>/', views.start_one_to_one_call, name='start_call'),
     path('chat/create/', views.create_chat, name='create_chat'),
