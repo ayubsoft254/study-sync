@@ -29,9 +29,9 @@ class School(models.Model):
 class Course(models.Model):
     name = models.CharField(max_length=200)
     code = models.CharField(max_length=50)
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    schools = models.ManyToManyField(School, related_name='courses')  # Many-to-Many Relationship
     description = models.TextField()
-    
+
     def __str__(self):
         return f"{self.code} - {self.name}"
 
