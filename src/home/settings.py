@@ -65,8 +65,7 @@ INSTALLED_APPS = [
 
     #my apps
     'app',
-
-
+    
     #third-part apps
     'allauth_ui',
     'allauth',

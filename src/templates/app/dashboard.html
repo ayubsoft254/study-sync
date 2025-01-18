@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-50">
@@ -16,16 +17,13 @@
             
             <nav class="space-y-2">
                 <a href="#" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100">
-                    <span class="material-icons mr-3">dashboard</span>
-                    Dashboard
+                    <span class="material-icons mr-3">dashboard</span>                    
                 </a>
                 <a href="#" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100">
-                    <span class="material-icons mr-3">calendar_today</span>
-                    Sessions
+                    <span class="material-icons mr-3">calendar</span>
                 </a>
                 <a href="#" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100">
                     <span class="material-icons mr-3">settings</span>
-                    Settings
                 </a>
             </nav>
         </div>
@@ -85,7 +83,7 @@
                         <div>
                             <p class="text-gray-500">Average Rating</p>
                             <h3 class="text-2xl font-bold">
-                                Average Rating: {{ avg_rating|floatformat:1 }}
+                                {{ avg_rating|floatformat:1 }}
                             </h3>
                         </div>
                     </div>
