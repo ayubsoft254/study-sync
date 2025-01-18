@@ -8,6 +8,17 @@ class User(AbstractUser):
     bio = models.TextField(blank=True)
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
 
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='custom_user_set',  # Change the related_name
+        blank=True,
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='custom_user_permissions_set',  # Change the related_name
+        blank=True,
+    )
+
 class School(models.Model):
     name = models.CharField(max_length=200)
     location = models.CharField(max_length=200)
