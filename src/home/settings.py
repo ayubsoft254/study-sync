@@ -138,7 +138,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 #django allouth config
-LOGIN_REDIRECT_URL = "dashboard"
+# LOGIN_REDIRECT_URL = "dashboard"
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[STUDYSYNC]"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_EMAIL_REQUIRED = True
@@ -153,10 +153,6 @@ AUTHENTICATION_BACKENDS = [
     # `allauth` specific authentication methods, such as login by email
     'allauth.account.auth_backends.AuthenticationBackend',    
 ]
-
-ACCOUNT_FORMS = {
-    'signup': 'app.forms.CustomSignupForm',
-}
 
 
 
