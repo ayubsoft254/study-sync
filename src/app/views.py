@@ -4,11 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DetailView
 from django.http import JsonResponse
+from .forms import RoleSelectionForm
 from .models import *
 from django.utils import timezone
 from django.contrib import messages
 import uuid
 from django.db.models import Avg
+
 
 
 def home(request):
@@ -137,3 +139,15 @@ def rate_mentor(request, session_id):
     
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
+
+@login_required
+def select_role(request):
+    profile = request.user.profile
+    if request.method == 'POST':
+        form = RoleSelectionForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect('home')  # Redirect to your desired page
+    else:
+        form = RoleSelectionForm(instance=profile)
+    return render(request, 'select_role.html', {'form': form})
