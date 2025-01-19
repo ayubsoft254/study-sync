@@ -10,14 +10,7 @@
                     <a href="/" class="inline-flex items-center px-1 pt-1 text-gray-900">Home</a>
                     {% if user.is_authenticated %}
                         <a href="" class="inline-flex items-center px-1 pt-1 text-gray-900">Dashboard</a>
-                        {% for course in courses %}
-                            <a href="{% url 'resource_list' course.id %}" class="inline-flex items-center px-1 pt-1 text-gray-900">Resources for {{ course.name }}</a>
-                        {% endfor %}
-                        {% if user_profile and user_profile.id %}
-                        <a href="{% url 'create_private_chat' user_profile.id %}" class="inline-flex items-center px-1 pt-1 text-gray-900">Private Chat</a>
-                        {% else %}
-                        <p>No private chat available.</p>
-                        {% endif %}
+                                             
 
 
                     {% endif %}

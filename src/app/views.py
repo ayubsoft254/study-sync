@@ -61,6 +61,12 @@ def dashboard(request, username):
     # Render the dashboard with the context
     return render(request, 'app/dashboard.html', context)
 
+def login_redirect(request):
+    if request.user.is_authenticated:
+        # Use the namespaced URL name
+        return redirect('app:dashboard', username=request.user.username)
+    return redirect('account_login')
+
 class MentorSessionCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = MentorSession
     fields = ['title', 'description', 'scheduled_time', 'duration', 'max_participants']
@@ -130,3 +136,4 @@ def rate_mentor(request, session_id):
         return JsonResponse({'success': True})
     
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
