@@ -1,204 +1,234 @@
 {% extends 'base.html' %}
-{% load static %}
+
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Sidebar -->
-    <aside class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform bg-white border-r border-gray-200">
-        <div class="p-4">
-            <div class="flex items-center gap-4 mb-6">
-                <img src="{% static 'img/avatar-placeholder.png' %}" alt="Profile" class="w-10 h-10 rounded-full">
+<div class="space-y-8">
+    <!-- Dashboard Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <span class="text-2xl text-indigo-600">{{ user.username.0|upper }}</span>
+                </div>
                 <div>
-                    <h2 class="text-lg font-semibold">{{ user.get_full_name }}</h2>
-                    <p class="text-sm text-gray-500">{% if user.mentee %}Mentee{% else %}Mentor{% endif %}</p>
+                    <h1 class="text-2xl font-bold text-gray-900">Welcome back, {{ user.get_full_name|default:user.username }}</h1>
+                    <p class="text-gray-500">{{ role|title }} Dashboard</p>
                 </div>
             </div>
-            
-            <nav class="space-y-2">
-                <a href="#" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100">
-                    <span class="material-icons mr-3">dashboard</span>                    
-                </a>
-                <a href="#" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100">
-                    <span class="material-icons mr-3">calendar</span>
-                </a>
-                <a href="#" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100">
-                    <span class="material-icons mr-3">settings</span>
-                </a>
-            </nav>
-        </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="ml-64 p-8">
-        <!-- Welcome Section -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Welcome back, {{ user.first_name }}!</h1>
-            <p class="text-gray-600">Here's what's happening in your learning journey.</p>
-        </div>
-
-        <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {% if user.mentee %}
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div class="flex items-center">
-                        <span class="material-icons text-blue-500 text-3xl mr-4">menu_book</span>
-                        <div>
-                            <p class="text-gray-500">Available Resources</p>
-                            <h3 class="text-2xl font-bold">{{ resources.count }}</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div class="flex items-center">
-                        <span class="material-icons text-green-500 text-3xl mr-4">event</span>
-                        <div>
-                            <p class="text-gray-500">Upcoming Sessions</p>
-                            <h3 class="text-2xl font-bold">{{ upcoming_sessions.count }}</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div class="flex items-center">
-                        <span class="material-icons text-purple-500 text-3xl mr-4">check_circle</span>
-                        <div>
-                            <p class="text-gray-500">Sessions Attended</p>
-                            <h3 class="text-2xl font-bold">{{ attended_sessions.count }}</h3>
-                        </div>
-                    </div>
-                </div>
-            {% else %}
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div class="flex items-center">
-                        <span class="material-icons text-blue-500 text-3xl mr-4">groups</span>
-                        <div>
-                            <p class="text-gray-500">Created Sessions</p>
-                            <h3 class="text-2xl font-bold">{{ created_sessions.count }}</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div class="flex items-center">
-                        <span class="material-icons text-yellow-500 text-3xl mr-4">star</span>
-                        <div>
-                            <p class="text-gray-500">Average Rating</p>
-                            <h3 class="text-2xl font-bold">
-                                {{ avg_rating|floatformat:1 }}
-                            </h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div class="flex items-center">
-                        <span class="material-icons text-green-500 text-3xl mr-4">people</span>
-                        <div>
-                            <p class="text-gray-500">Total Mentees</p>
-                            <h3 class="text-2xl font-bold">
-                                {{ participant_count }}
-                            </h3>
-                        </div>
-                    </div>
-                </div>
+            {% if role == 'mentor' %}
+            <a href="{% url 'app:create_session' %}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Create Session
+            </a>
             {% endif %}
         </div>
+    </div>
 
-        <!-- Main Content Sections -->
-        {% if user.mentee %}
-            <!-- Resources Section -->
-            <section class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
-                <div class="p-6">
-                    <h2 class="text-xl font-semibold mb-4">Learning Resources</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {% for resource in resources %}
-                            <div class="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                                <h3 class="font-medium mb-2">{{ resource.title }}</h3>
-                                <p class="text-sm text-gray-600 mb-3">{{ resource.description|truncatewords:20 }}</p>
-                                <a href="{{ resource.url }}" class="text-blue-500 hover:text-blue-700 text-sm">
-                                    Access Resource →
-                                </a>
-                            </div>
-                        {% endfor %}
+    {% if role == 'mentor' %}
+    <!-- Mentor Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Average Rating</h3>
+            <div class="mt-2 flex items-baseline">
+                <span class="text-3xl font-semibold text-gray-900">{{ stats.avg_rating|floatformat:1 }}</span>
+                <span class="ml-2 text-sm text-gray-500">/5.0</span>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Total Sessions</h3>
+            <div class="mt-2">
+                <span class="text-3xl font-semibold text-gray-900">{{ stats.total_sessions }}</span>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Students Taught</h3>
+            <div class="mt-2">
+                <span class="text-3xl font-semibold text-gray-900">{{ stats.unique_participants }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Sessions -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Your Sessions</h2>
+        {% if created_sessions %}
+        <div class="space-y-4">
+            {% for session in created_sessions %}
+            <div class="border rounded-lg p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">{{ session.title }}</h3>
+                        <p class="text-sm text-gray-500">{{ session.scheduled_time|date:"F j, Y, g:i a" }}</p>
+                        <div class="mt-2 flex items-center space-x-4">
+                            <span class="text-sm text-gray-500">
+                                {{ session.participants.count }}/{{ session.max_participants }} participants
+                            </span>
+                            <span class="text-sm text-gray-500">
+                                {{ session.duration }} minutes
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-3">
+                        {% if session.scheduled_time > now %}
+                        <button type="button" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Edit
+                        </button>
+                        <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Start Session
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
-            </section>
-
-            <!-- Upcoming Sessions -->
-            <section class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="p-6">
-                    <h2 class="text-xl font-semibold mb-4">Upcoming Sessions</h2>
-                    <div class="space-y-4">
-                        {% for session in upcoming_sessions %}
-                            <div class="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <h3 class="font-medium">{{ session.title }}</h3>
-                                    <p class="text-sm text-gray-600">
-                                        with {{ session.mentor.get_full_name }}
-                                    </p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-medium">
-                                        {{ session.scheduled_time|date:"F j, Y" }}
-                                    </p>
-                                    <p class="text-sm text-gray-500">
-                                        {{ session.scheduled_time|date:"g:i A" }}
-                                    </p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
+            </div>
+            {% endfor %}
+        </div>
         {% else %}
-            <!-- Mentor's Created Sessions -->
-            <section class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
-                <div class="p-6">
-                    <h2 class="text-xl font-semibold mb-4">Your Sessions</h2>
-                    <div class="space-y-4">
-                        {% for session in created_sessions %}
-                            <div class="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <h3 class="font-medium">{{ session.title }}</h3>
-                                    <p class="text-sm text-gray-600">
-                                        {{ session.participants.count }} participants
-                                    </p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-medium">
-                                        {{ session.scheduled_time|date:"F j, Y" }}
-                                    </p>
-                                    <p class="text-sm text-gray-500">
-                                        {{ session.scheduled_time|date:"g:i A" }}
-                                    </p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
-
-            <!-- Ratings & Reviews -->
-            <section class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="p-6">
-                    <h2 class="text-xl font-semibold mb-4">Recent Feedback</h2>
-                    <div class="space-y-4">
-                        {% for rating in ratings|slice:":5" %}
-                            <div class="p-4 border rounded-lg">
-                                <div class="flex items-center mb-2">
-                                    <div class="flex text-yellow-400">
-                                        {% for i in rating.rating %}
-                                            <span class="material-icons text-sm">star</span>
-                                        {% endfor %}
-                                    </div>
-                                    <span class="text-sm text-gray-500 ml-2">
-                                        {{ rating.created_at|timesince }} ago
-                                    </span>
-                                </div>
-                                <p class="text-gray-700">{{ rating.comment }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No sessions</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating a new session.</p>
+            <div class="mt-6">
+                <a href="{% url 'app:create_session' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                    Create Session
+                </a>
+            </div>
+        </div>
         {% endif %}
-    </main>
+    </div>
+
+    {% else %}
+    <!-- Mentee View -->
+    <!-- Upcoming Sessions -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Upcoming Sessions</h2>
+        {% if upcoming_sessions %}
+        <div class="space-y-4">
+            {% for session in upcoming_sessions %}
+            <div class="border rounded-lg p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">{{ session.title }}</h3>
+                        <p class="text-sm text-gray-500">with {{ session.mentor.user.get_full_name }}</p>
+                        <div class="mt-2 flex items-center space-x-4">
+                            <span class="text-sm text-gray-500">
+                                {{ session.scheduled_time|date:"F j, Y, g:i a" }}
+                            </span>
+                            <span class="text-sm text-gray-500">
+                                {{ session.duration }} minutes
+                            </span>
+                        </div>
+                    </div>
+                    <a href="#" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                        Join Session
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No upcoming sessions</h3>
+            <p class="mt-1 text-sm text-gray-500">Check back later for new sessions.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Course Resources -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Course Resources</h2>
+        {% if resources %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for resource in resources %}
+            <div class="border rounded-lg p-4 hover:bg-gray-50">
+                <h3 class="text-lg font-medium text-gray-900">{{ resource.title }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ resource.description|truncatewords:20 }}</p>
+                <div class="mt-4 flex items-center justify-between">
+                    <span class="text-sm text-gray-500">
+                        Added {{ resource.created_at|date:"M d, Y" }}
+                    </span>
+                    <a href="{{ resource.file.url }}" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
+                        Download
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No resources</h3>
+            <p class="mt-1 text-sm text-gray-500">No resources have been added to your course yet.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{# mentor_session_form.html #}
+{% extends 'base.html' %}
+
+{% block title %}Create Session{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="pb-5 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">Create New Session</h2>
+            <p class="mt-2 text-sm text-gray-500">Schedule a new mentoring session for your students.</p>
+        </div>
+
+        <form method="post" class="mt-6 space-y-6">
+            {% csrf_token %}
+
+            <div class="space-y-6">
+                {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ field.label }}
+                        {% if field.field.required %}
+                            <span class="text-red-500">*</span>
+                        {% endif %}
+                    </label>
+                    <div class="mt-1">
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="mt-1">
+                            {% for error in field.errors %}
+                            <p class="text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if field.help_text %}
+                    <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex justify-end pt-6">
+                <a href="{% url 'app:dashboard' username=user.username %}" 
+                   class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Create Session
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

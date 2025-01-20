@@ -19,6 +19,9 @@ class DashboardMixin:
             'user': user,
             'notifications': user.notifications.filter(read=False)[:5],  # Assuming you add notifications
         }
+    
+def home(request):
+    return render(request, 'app/home.html')
 
 @login_required
 def dashboard(request, username):
@@ -100,6 +103,12 @@ def dashboard(request, username):
         # Log the error here
     
     return render(request, 'app/dashboard.html', context)
+
+def login_redirect(request):
+    if request.user.is_authenticated:
+        # Use the namespaced URL name
+        return redirect('app:dashboard', username=request.user.username)
+    return redirect('account_login')
 
 class MentorSessionCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = MentorSession
