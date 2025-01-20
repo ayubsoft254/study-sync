@@ -137,6 +137,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 #django allouth config
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = '/select-role/'  # Path to role selection page
 LOGIN_REDIRECT_URL = '/accounts/redirect/'
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[STUDYSYNC]"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"

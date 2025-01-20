@@ -1,6 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+import uuid
+
+def generate_room_id():
+    return str(uuid.uuid4())
+
 
 
 class School(models.Model):
@@ -108,7 +113,9 @@ class Call(models.Model):
     participants = models.ManyToManyField(User, related_name='calls')
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
-    room_id = models.CharField(max_length=100, unique=True)
+    room_id = models.CharField(max_length=100, unique=True, default=generate_room_id)
+
+    
 
     def __str__(self):
         return f"Call ({self.call_type})"
@@ -125,6 +132,10 @@ class MentorSession(models.Model):
     duration = models.IntegerField(help_text="Duration in minutes")
     max_participants = models.IntegerField()
     call = models.OneToOneField(Call, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('mentor', 'scheduled_time')
+        ordering = ['-scheduled_time']
 
     def __str__(self):
         return self.title
@@ -156,4 +167,14 @@ class MentorRating(models.Model):
 
     def __str__(self):
         return f"Rating for {self.mentor.user.username} by {self.mentee.user.username}"
+    
+class Profile(models.Model):
+    ROLE_CHOICES = [
+        ('mentor', 'Mentor'),
+        ('mentee', 'Mentee'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.user.username} - {self.role}"
