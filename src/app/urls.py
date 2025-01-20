@@ -11,4 +11,5 @@ urlpatterns = [
     path('call/start/<int:user_id>/', views.start_one_to_one_call, name='start_call'),    
     path('resource/create/', views.ResourceCreate.as_view(), name='create_resource'),
     path('rate/mentor/<int:session_id>/', views.rate_mentor, name='rate_mentor'),
+    path('profile/setup/', views.profile_setup, name='account_profile'),
 ]

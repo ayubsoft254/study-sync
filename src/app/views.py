@@ -7,10 +7,11 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db.models import Avg, Count
 from django.core.exceptions import PermissionDenied
-from .models import User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Chat
+from .models import Mentor, User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Mentee
 import uuid
 from typing import Dict, Any
 from django.urls import reverse
+from .forms import *
 
 class DashboardMixin:
     """Mixin to handle common dashboard functionality"""
@@ -41,16 +42,18 @@ def dashboard(request, username):
     
     try:
         if hasattr(profile_user, 'mentee'):
-            mentee = profile_user.mentee
+            mentee = profile_user.mentee  # Get the Mentee instance
+            
             # Optimize queries with select_related and prefetch_related
             upcoming_sessions = (MentorSession.objects
-                .filter(participants=profile_user,
-                       scheduled_time__gt=timezone.now())
+                .filter(participants=profile_user,  # This is fine; profile_user can be used here
+                        scheduled_time__gt=timezone.now())
                 .select_related('mentor', 'call')
                 .prefetch_related('participants'))
             
+            # Use the mentee instance directly
             attended_sessions = (SessionAttendance.objects
-                .filter(mentee=mentee)
+                .filter(mentee=mentee)  # Ensure this uses the Mentee instance
                 .select_related('session', 'session__mentor')
                 .order_by('-session__scheduled_time'))
             
@@ -63,13 +66,12 @@ def dashboard(request, username):
                 'resources': resources,
                 'upcoming_sessions': upcoming_sessions,
                 'attended_sessions': attended_sessions,
-                'course_progress': mentee.get_course_progress(),  # Implement this method in Mentee model
+                'course_progress': mentee.get_course_progress(),
             })
             
         elif hasattr(profile_user, 'mentor'):
             mentor = profile_user.mentor
             
-            # Fixed: Changed mentorrating__rating to ratings__rating
             mentor_stats = (MentorSession.objects
                 .filter(mentor=mentor)
                 .aggregate(
@@ -97,13 +99,14 @@ def dashboard(request, username):
             
         else:
             messages.info(request, "Please complete your profile setup to access the dashboard.")
-            return redirect('app:account_profile')
+            return redirect('app:profile_setup')
             
     except Exception as e:
         messages.error(request, f"An error occurred while loading the dashboard: {str(e)}")
         # Log the error here
     
     return render(request, 'app/dashboard.html', context)
+
 
 def login_redirect(request):
     if request.user.is_authenticated:
@@ -240,3 +243,39 @@ class ResourceCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         except Exception as e:
             messages.error(self.request, f"Failed to create resource: {str(e)}")
             return self.form_invalid(form)
+        
+@login_required
+def profile_setup(request):
+    if request.method == 'POST':
+        form = ProfileForm(request.POST)
+        if form.is_valid():
+            role = form.cleaned_data['role']
+            user = request.user
+            
+            try:
+                if role == 'mentor':
+                    mentor = Mentor.objects.create(
+                        user=user,
+                        expertise=form.cleaned_data['expertise'],
+                        available=True
+                    )
+                    # Add selected courses to the mentor
+                    mentor.courses.set(form.cleaned_data['courses'])
+                    
+                else:  # mentee
+                    Mentee.objects.create(
+                        user=user,
+                        school=form.cleaned_data['school'],
+                        course=form.cleaned_data['course'],
+                        enrollment_date=timezone.now()
+                    )
+                
+                messages.success(request, "Profile setup completed successfully!")
+                return redirect('app:dashboard', username=user.username)
+                
+            except Exception as e:
+                messages.error(request, f"An error occurred while setting up your profile: {str(e)}")
+    else:
+        form = ProfileForm()
+    
+    return render(request, 'app/profile_setup.html', {'form': form})

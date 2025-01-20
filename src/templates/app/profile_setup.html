@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+        <h1 class="text-2xl font-bold mb-6">Complete Your Profile</h1>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+            
+            {# Role Selection #}
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">{{ form.role.label }}</label>
+                <div class="space-y-2">
+                    {{ form.role }}
+                </div>
+            </div>
+            
+            {# Mentee Fields #}
+            <div class="mentee-fields" data-role="mentee">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">{{ form.school.label }}</label>
+                    {{ form.school }}
+                    {% if form.school.help_text %}
+                    <p class="text-gray-500 text-sm mt-1">{{ form.school.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">{{ form.course.label }}</label>
+                    {{ form.course }}
+                    {% if form.course.help_text %}
+                    <p class="text-gray-500 text-sm mt-1">{{ form.course.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {# Mentor Fields #}
+            <div class="mentor-fields" data-role="mentor">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">{{ form.expertise.label }}</label>
+                    {{ form.expertise }}
+                    {% if form.expertise.help_text %}
+                    <p class="text-gray-500 text-sm mt-1">{{ form.expertise.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">{{ form.courses.label }}</label>
+                    <div class="space-y-2">
+                        {{ form.courses }}
+                    </div>
+                    {% if form.courses.help_text %}
+                    <p class="text-gray-500 text-sm mt-1">{{ form.courses.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" 
+                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors">
+                    Complete Profile
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleInputs = document.querySelectorAll('input[name="role"]');
+    const menteeFields = document.querySelector('.mentee-fields');
+    const mentorFields = document.querySelector('.mentor-fields');
+    
+    function toggleFields() {
+        const selectedRole = document.querySelector('input[name="role"]:checked').value;
+        if (selectedRole === 'mentee') {
+            menteeFields.style.display = 'block';
+            mentorFields.style.display = 'none';
+        } else {
+            menteeFields.style.display = 'none';
+            mentorFields.style.display = 'block';
+        }
+    }
+    
+    roleInputs.forEach(input => {
+        input.addEventListener('change', toggleFields);
+    });
+    
+    // Initial toggle
+    toggleFields();
+});
+</script>
+{% endblock %}
