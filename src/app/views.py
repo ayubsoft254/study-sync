@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied
 from .models import User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Chat
 import uuid
 from typing import Dict, Any
+from django.urls import reverse
 
 class DashboardMixin:
     """Mixin to handle common dashboard functionality"""
@@ -68,11 +69,11 @@ def dashboard(request, username):
         elif hasattr(profile_user, 'mentor'):
             mentor = profile_user.mentor
             
-            # Optimize mentor statistics queries
+            # Fixed: Changed mentorrating__rating to ratings__rating
             mentor_stats = (MentorSession.objects
                 .filter(mentor=mentor)
                 .aggregate(
-                    avg_rating=Avg('mentorrating__rating'),
+                    avg_rating=Avg('ratings__rating'),
                     total_sessions=Count('id'),
                     unique_participants=Count('participants', distinct=True)
                 ))
@@ -131,6 +132,12 @@ class MentorSessionCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         except Exception as e:
             messages.error(self.request, f"Failed to create session: {str(e)}")
             return self.form_invalid(form)
+    
+    def get_success_url(self):
+        # Replace 'dashboard' with the name of the URL pattern for your dashboard
+        return reverse('app:dashboard', kwargs={'username': self.request.user.username})           
+        
+        
 
 @login_required
 def start_one_to_one_call(request, user_id):
