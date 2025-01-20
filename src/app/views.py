@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.db.models import Avg, Count
 from django.core.exceptions import PermissionDenied
 from .models import User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Chat
+from .mixins import DashboardMixin  # Import DashboardMixin
 import uuid
 from django.db.models import Avg
 
