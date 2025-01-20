@@ -46,7 +46,7 @@ def dashboard(request, username):
             
             # Optimize queries with select_related and prefetch_related
             upcoming_sessions = (MentorSession.objects
-                .filter(participants=profile_user,  # This is fine; profile_user can be used here
+                .filter(participants=mentee,  # Use the mentee instance here
                         scheduled_time__gt=timezone.now())
                 .select_related('mentor', 'call')
                 .prefetch_related('participants'))
