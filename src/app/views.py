@@ -1,71 +1,105 @@
-# views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DetailView
-from django.http import JsonResponse
-from .models import *
+from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.contrib import messages
+from django.db.models import Avg, Count
+from django.core.exceptions import PermissionDenied
+from .models import User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Chat
 import uuid
-from django.db.models import Avg
+from typing import Dict, Any
 
+class DashboardMixin:
+    """Mixin to handle common dashboard functionality"""
+    def get_dashboard_context(self, user: User) -> Dict[str, Any]:
+        """Get basic context for dashboard"""
+        return {
+            'user': user,
+            'notifications': user.notifications.filter(read=False)[:5],  # Assuming you add notifications
+        }
 
-def home(request):
-    return render(request, 'app/home.html')
-
+@login_required
 def dashboard(request, username):
-           
-    # Fetch the profile user or return 404 if not found
-    profile_user = get_object_or_404(User, username=username)
+    """
+    Enhanced dashboard view with better error handling and optimized queries
+    """
+    profile_user = get_object_or_404(User.objects.select_related('mentee', 'mentor'), 
+                                    username=username)
     
-    # Redirect users trying to access another user's dashboard
+    # Security check with custom error message
     if request.user != profile_user:
-        messages.warning(request, "Redirected to your dashboard.")
+        messages.warning(request, "You can only access your own dashboard.")
         return redirect('app:dashboard', username=request.user.username)
     
-    # Common context for the dashboard
-    context = {'user': profile_user}
+    context = DashboardMixin().get_dashboard_context(profile_user)
     
-    if hasattr(profile_user, 'mentee'):
-        # Mentee-specific context
-        mentee = profile_user.mentee 
-        avg_rating = MentorRating.objects.filter(mentor=mentor).aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
-        participant_count = MentorSession.objects.filter(mentor=mentor).values('participants').distinct().count()
-        
-        context.update({
-            'resources': Resource.objects.filter(course=mentee.course).select_related('course'),
-            'upcoming_sessions': MentorSession.objects.filter(
-                participants=profile_user,
-                scheduled_time__gt=timezone.now()
-            ).select_related('mentor'),
-            'attended_sessions': SessionAttendance.objects.filter(
-                mentee=mentee
-            ).select_related('session__mentor'),
-
-            'avg_rating': avg_rating,  # Add the average rating to the context
-            'participant_count': participant_count,  # Add the participant count to the context
-        })
-    elif hasattr(profile_user, 'mentor'):
-        # Mentor-specific context
-        mentor = profile_user.mentor  # Access the Mentor object
-        context.update({
-            'created_sessions': MentorSession.objects.filter(mentor=mentor).prefetch_related('participants'),
-            'ratings': MentorRating.objects.filter(mentor=mentor).select_related('mentee', 'session'),
-        })
-    # else:
-    #     # Default for users without mentee or mentor roles
-    #     messages.info(request, "Your account is not yet configured for dashboard access.")
-    #     return redirect('account_profile')  # Adjust the redirect URL as needed
-
-    # Render the dashboard with the context
+    try:
+        if hasattr(profile_user, 'mentee'):
+            mentee = profile_user.mentee
+            # Optimize queries with select_related and prefetch_related
+            upcoming_sessions = (MentorSession.objects
+                .filter(participants=profile_user,
+                       scheduled_time__gt=timezone.now())
+                .select_related('mentor', 'call')
+                .prefetch_related('participants'))
+            
+            attended_sessions = (SessionAttendance.objects
+                .filter(mentee=mentee)
+                .select_related('session', 'session__mentor')
+                .order_by('-session__scheduled_time'))
+            
+            resources = (Resource.objects
+                .filter(course=mentee.course)
+                .select_related('course', 'uploaded_by'))
+            
+            context.update({
+                'role': 'mentee',
+                'resources': resources,
+                'upcoming_sessions': upcoming_sessions,
+                'attended_sessions': attended_sessions,
+                'course_progress': mentee.get_course_progress(),  # Implement this method in Mentee model
+            })
+            
+        elif hasattr(profile_user, 'mentor'):
+            mentor = profile_user.mentor
+            
+            # Optimize mentor statistics queries
+            mentor_stats = (MentorSession.objects
+                .filter(mentor=mentor)
+                .aggregate(
+                    avg_rating=Avg('mentorrating__rating'),
+                    total_sessions=Count('id'),
+                    unique_participants=Count('participants', distinct=True)
+                ))
+            
+            created_sessions = (MentorSession.objects
+                .filter(mentor=mentor)
+                .prefetch_related('participants')
+                .order_by('-scheduled_time'))
+            
+            recent_ratings = (MentorRating.objects
+                .filter(mentor=mentor)
+                .select_related('mentee', 'session')
+                .order_by('-created_at')[:5])
+            
+            context.update({
+                'role': 'mentor',
+                'created_sessions': created_sessions,
+                'recent_ratings': recent_ratings,
+                'stats': mentor_stats,
+            })
+            
+        else:
+            messages.info(request, "Please complete your profile setup to access the dashboard.")
+            return redirect('app:account_profile')
+            
+    except Exception as e:
+        messages.error(request, f"An error occurred while loading the dashboard: {str(e)}")
+        # Log the error here
+    
     return render(request, 'app/dashboard.html', context)
-
-def login_redirect(request):
-    if request.user.is_authenticated:
-        # Use the namespaced URL name
-        return redirect('app:dashboard', username=request.user.username)
-    return redirect('account_login')
 
 class MentorSessionCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = MentorSession
@@ -73,38 +107,98 @@ class MentorSessionCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     template_name = 'app/mentor_session_form.html'
     
     def test_func(self):
-        return self.request.user.is_mentor
+        return hasattr(self.request.user, 'mentor')
     
     def form_valid(self, form):
-        form.instance.mentor = self.request.user
-        form.instance.call = Call.objects.create(
-            call_type='conference',
-            room_id=f"session_{uuid.uuid4().hex[:10]}"
-        )
-        return super().form_valid(form)
+        try:
+            form.instance.mentor = self.request.user.mentor
+            form.instance.call = Call.objects.create(
+                call_type='conference',
+                room_id=f"session_{uuid.uuid4().hex[:10]}"
+            )
+            response = super().form_valid(form)
+            messages.success(self.request, "Session created successfully!")
+            return response
+        except Exception as e:
+            messages.error(self.request, f"Failed to create session: {str(e)}")
+            return self.form_invalid(form)
 
 @login_required
 def start_one_to_one_call(request, user_id):
-    other_user = get_object_or_404(User, id=user_id)
-    call = Call.objects.create(
-        call_type='one_to_one',
-        room_id=f"call_{uuid.uuid4().hex[:10]}"
-    )
-    call.participants.add(request.user, other_user)
-    return JsonResponse({'room_id': call.room_id})
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        other_user = get_object_or_404(User, id=user_id)
+        
+        # Check if there's already an active call
+        existing_call = Call.objects.filter(
+            call_type='one_to_one',
+            participants__in=[request.user, other_user],
+            ended_at__isnull=True
+        ).first()
+        
+        if existing_call:
+            return JsonResponse({'room_id': existing_call.room_id})
+        
+        # Create new call
+        call = Call.objects.create(
+            call_type='one_to_one',
+            room_id=f"call_{uuid.uuid4().hex[:10]}"
+        )
+        call.participants.add(request.user, other_user)
+        
+        return JsonResponse({
+            'room_id': call.room_id,
+            'message': 'Call created successfully'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
-def create_chat(request):
-    if request.method == 'POST':
-        chat_type = request.POST.get('chat_type')
-        participants = request.POST.getlist('participants')
-        
-        chat = Chat.objects.create(chat_type=chat_type)
-        chat.participants.add(request.user, *participants)
-        
-        return JsonResponse({'chat_id': chat.id})
+def rate_mentor(request, session_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
     
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
+    try:
+        session = get_object_or_404(MentorSession, id=session_id)
+        
+        # Verify the user attended the session
+        if not SessionAttendance.objects.filter(
+            session=session,
+            mentee=request.user.mentee
+        ).exists():
+            return JsonResponse({'error': 'You must attend the session to rate it'}, status=403)
+        
+        # Check if user already rated this session
+        if MentorRating.objects.filter(
+            session=session,
+            mentee=request.user.mentee
+        ).exists():
+            return JsonResponse({'error': 'You have already rated this session'}, status=400)
+        
+        rating = int(request.POST.get('rating'))
+        if not 1 <= rating <= 5:
+            return JsonResponse({'error': 'Rating must be between 1 and 5'}, status=400)
+        
+        MentorRating.objects.create(
+            mentor=session.mentor,
+            mentee=request.user.mentee,
+            session=session,
+            rating=rating,
+            comment=request.POST.get('comment', '')
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Rating submitted successfully'
+        })
+        
+    except ValueError:
+        return JsonResponse({'error': 'Invalid rating value'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 class ResourceCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Resource
@@ -112,28 +206,21 @@ class ResourceCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     template_name = 'app/resource_form.html'
     
     def test_func(self):
-        return self.request.user.is_mentor
+        return hasattr(self.request.user, 'mentor')
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if hasattr(self.request.user, 'mentor'):
+            # Limit course choices to mentor's courses
+            form.fields['course'].queryset = self.request.user.mentor.courses.all()
+        return form
     
     def form_valid(self, form):
-        form.instance.uploaded_by = self.request.user
-        return super().form_valid(form)
-
-@login_required
-def rate_mentor(request, session_id):
-    if request.method == 'POST':
-        session = get_object_or_404(MentorSession, id=session_id)
-        rating = request.POST.get('rating')
-        comment = request.POST.get('comment', '')
-        
-        MentorRating.objects.create(
-            mentor=session.mentor,
-            mentee=request.user,
-            session=session,
-            rating=rating,
-            comment=comment
-        )
-        
-        return JsonResponse({'success': True})
-    
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
-
+        try:
+            form.instance.uploaded_by = self.request.user
+            response = super().form_valid(form)
+            messages.success(self.request, "Resource created successfully!")
+            return response
+        except Exception as e:
+            messages.error(self.request, f"Failed to create resource: {str(e)}")
+            return self.form_invalid(form)
