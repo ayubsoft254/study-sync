@@ -8,14 +8,19 @@ from django.contrib import messages
 from django.db.models import Avg, Count
 from django.core.exceptions import PermissionDenied
 from .models import User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Chat
-from .mixins import DashboardMixin  # Import DashboardMixin
 import uuid
-from django.db.models import Avg
+from typing import Dict, Any
 
+class DashboardMixin:
+    """Mixin to handle common dashboard functionality"""
+    def get_dashboard_context(self, user: User) -> Dict[str, Any]:
+        """Get basic context for dashboard"""
+        return {
+            'user': user,
+            'notifications': user.notifications.filter(read=False)[:5],  # Assuming you add notifications
+        }
 
-def home(request):
-    return render(request, 'app/home.html')
-
+@login_required
 def dashboard(request, username):
     """
     Enhanced dashboard view with better error handling and optimized queries
@@ -211,25 +216,11 @@ class ResourceCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return form
     
     def form_valid(self, form):
-        form.instance.uploaded_by = self.request.user
-        return super().form_valid(form)
-
-@login_required
-def rate_mentor(request, session_id):
-    if request.method == 'POST':
-        session = get_object_or_404(MentorSession, id=session_id)
-        rating = request.POST.get('rating')
-        comment = request.POST.get('comment', '')
-        
-        MentorRating.objects.create(
-            mentor=session.mentor,
-            mentee=request.user,
-            session=session,
-            rating=rating,
-            comment=comment
-        )
-        
-        return JsonResponse({'success': True})
-    
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
-
+        try:
+            form.instance.uploaded_by = self.request.user
+            response = super().form_valid(form)
+            messages.success(self.request, "Resource created successfully!")
+            return response
+        except Exception as e:
+            messages.error(self.request, f"Failed to create resource: {str(e)}")
+            return self.form_invalid(form)
