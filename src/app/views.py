@@ -99,7 +99,7 @@ def dashboard(request, username):
             
         else:
             messages.info(request, "Please complete your profile setup to access the dashboard.")
-            return redirect('app:profile_setup')
+            return redirect('app:account_profile')
             
     except Exception as e:
         messages.error(request, f"An error occurred while loading the dashboard: {str(e)}")
