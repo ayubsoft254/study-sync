@@ -315,6 +315,7 @@ def sessions_view(request):
     context = {
         'sessions': sessions,
         'course_members': course_members,
+        'role': 'mentor' if hasattr(request.user, 'mentor') else 'mentee',
     }
     return render(request, 'app/sessions.html', context)
 
