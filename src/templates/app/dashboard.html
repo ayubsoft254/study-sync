@@ -12,8 +12,13 @@
                     <span class="text-2xl text-indigo-600">{{ user.username.0|upper }}</span>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Welcome back, {{ user.get_full_name|default:user.username }}</h1>
+                    <h1 class="text-2xl font-bold text-gray-900">Welcome back, {{ user.get_full_name|default:user.username }}</h1>                    
                     <p class="text-gray-500">{{ role|title }} Dashboard</p>
+
+                    <a href="{% url 'app:sessions' %}" 
+                    class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Manage sessions/chats
+                    </a>
                 </div>
             </div>
             {% if role == 'mentor' %}

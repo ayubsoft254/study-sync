@@ -288,17 +288,21 @@ def sessions_view(request):
     # Check if the user is a mentee or mentor
     if hasattr(user, 'mentee'):
         mentee = user.mentee
+        # Filter sessions where the mentee is a participant
         sessions = MentorSession.objects.filter(
-            participants=user
+            participants=mentee  # Use the mentee instance here
         ).select_related('mentor').prefetch_related('participants')
+        # Get all users in the same course as the mentee
         course_members = User.objects.filter(
             mentee__course=mentee.course
         ).select_related('mentee', 'mentor')
     elif hasattr(user, 'mentor'):
         mentor = user.mentor
+        # Filter sessions created by the mentor
         sessions = MentorSession.objects.filter(
             mentor=mentor
         ).select_related('mentor').prefetch_related('participants')
+        # Get all users in the courses taught by the mentor
         course_members = User.objects.filter(
             mentee__course__in=mentor.courses.all()
         ).select_related('mentee', 'mentor')
@@ -306,6 +310,7 @@ def sessions_view(request):
         # Handle case where the user is neither a mentee nor a mentor
         sessions = MentorSession.objects.none()
         course_members = User.objects.none()
+        messages.info(request, "Please complete your profile setup to access sessions.")
 
     context = {
         'sessions': sessions,
