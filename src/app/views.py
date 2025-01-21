@@ -7,11 +7,12 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db.models import Avg, Count
 from django.core.exceptions import PermissionDenied
-from .models import Mentor, User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Mentee
+from .models import Chat, Mentor, User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Mentee
 import uuid
 from typing import Dict, Any
 from django.urls import reverse
 from .forms import *
+from .utils import generate_agora_token  # Import the function if it's defined in utils.py
 
 class DashboardMixin:
     """Mixin to handle common dashboard functionality"""
@@ -279,3 +280,70 @@ def profile_setup(request):
         form = ProfileForm()
     
     return render(request, 'app/profile_setup.html', {'form': form})
+
+@login_required
+def sessions_view(request):
+    user = request.user
+
+    # Check if the user is a mentee or mentor
+    if hasattr(user, 'mentee'):
+        mentee = user.mentee
+        sessions = MentorSession.objects.filter(
+            participants=user
+        ).select_related('mentor').prefetch_related('participants')
+        course_members = User.objects.filter(
+            mentee__course=mentee.course
+        ).select_related('mentee', 'mentor')
+    elif hasattr(user, 'mentor'):
+        mentor = user.mentor
+        sessions = MentorSession.objects.filter(
+            mentor=mentor
+        ).select_related('mentor').prefetch_related('participants')
+        course_members = User.objects.filter(
+            mentee__course__in=mentor.courses.all()
+        ).select_related('mentee', 'mentor')
+    else:
+        # Handle case where the user is neither a mentee nor a mentor
+        sessions = MentorSession.objects.none()
+        course_members = User.objects.none()
+
+    context = {
+        'sessions': sessions,
+        'course_members': course_members,
+    }
+    return render(request, 'app/sessions.html', context)
+
+@login_required
+def send_message(request):
+    if request.method == 'POST':
+        recipient_id = request.POST.get('recipient')
+        message = request.POST.get('message')
+        chat = Chat.objects.get_or_create(
+            chat_type='private',
+            participants__in=[request.user, recipient_id]
+        )
+        # Create message
+        chat.objects.create(
+            chat=chat,
+            sender=request.user,
+            content=message
+        )
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+def join_session(request, session_id):
+    session = get_object_or_404(MentorSession, id=session_id)
+    if not session.is_full:
+        SessionAttendance.objects.create(
+            session=session,
+            mentee=request.user.mentee
+        )
+        # Generate Agora token
+        token = generate_agora_token(session.call.room_id)
+        return JsonResponse({
+            'status': 'success',
+            'token': token,
+            'channel': session.call.room_id
+        })
+    return JsonResponse({'status': 'error', 'message': 'Session is full'}, status=400)

@@ -12,4 +12,6 @@ urlpatterns = [
     path('resource/create/', views.ResourceCreate.as_view(), name='create_resource'),
     path('rate/mentor/<int:session_id>/', views.rate_mentor, name='rate_mentor'),
     path('profile/setup/', views.profile_setup, name='account_profile'),
+    path('sessions/', views.sessions_view, name='sessions'),
+    path('agora/token/<str:channel_name>/', views.generate_agora_token, name='agora_token'),
 ]

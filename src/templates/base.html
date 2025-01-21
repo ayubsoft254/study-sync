@@ -55,5 +55,31 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {% block content %}{% endblock %}
     </main>
+
+    
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.x.js"></script>
+    <script>
+        async function initializeCall(channelName, token) {
+            const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+            const uid = await client.join(AGORA_APP_ID, channelName, token, null);
+            
+            // Create and publish local audio and video tracks
+            const localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+            const localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+            await client.publish([localAudioTrack, localVideoTrack]);
+            
+            // Handle remote users
+            client.on("user-published", async (user, mediaType) => {
+                await client.subscribe(user, mediaType);
+                if (mediaType === "video") {
+                    const playerContainer = document.getElementById("remote-stream");
+                    user.videoTrack.play(playerContainer);
+                }
+                if (mediaType === "audio") {
+                    user.audioTrack.play();
+                }
+            });
+        }
+    </script>
 </body>
 </html>

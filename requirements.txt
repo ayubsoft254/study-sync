@@ -19,3 +19,5 @@ django-allauth-ui
 django-widget-tweaks
 slippers
 djangorestframework
+agora-token-builder
+agora-rtc-sdk-ng
