@@ -321,31 +321,52 @@ def sessions_view(request):
 
 @login_required
 def send_message(request):
-    if request.method == 'POST':
-        recipient_id = request.POST.get('recipient')
-        message = request.POST.get('message')
-        chat = Chat.objects.get_or_create(
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+    recipient_id = request.POST.get('recipient')
+    message = request.POST.get('message')
+
+    if not recipient_id or not message:
+        return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
+
+    try:
+        recipient = User.objects.get(id=recipient_id)
+        # Ensure the recipient is part of the same course
+        if hasattr(request.user, 'mentee') and hasattr(recipient, 'mentee'):
+            if request.user.mentee.course != recipient.mentee.course:
+                return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
+        elif hasattr(request.user, 'mentor') and hasattr(recipient, 'mentee'):
+            if recipient.mentee.course not in request.user.mentor.courses.all():
+                return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
+
+        chat, created = Chat.objects.get_or_create(
             chat_type='private',
-            participants__in=[request.user, recipient_id]
+            participants__in=[request.user, recipient]
         )
-        # Create message
-        chat.objects.create(
-            chat=chat,
+        chat.messages.create(
             sender=request.user,
             content=message
         )
         return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error'}, status=400)
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Recipient not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
 def join_session(request, session_id):
+    if not hasattr(request.user, 'mentee'):
+        return JsonResponse({'status': 'error', 'message': 'Only mentees can join sessions'}, status=403)
+
     session = get_object_or_404(MentorSession, id=session_id)
     if not session.is_full:
         SessionAttendance.objects.create(
             session=session,
             mentee=request.user.mentee
         )
-        # Generate Agora token
         token = generate_agora_token(session.call.room_id)
         return JsonResponse({
             'status': 'success',

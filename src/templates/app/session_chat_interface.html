@@ -50,7 +50,7 @@
                     {% if role == 'mentee' and not session.is_full %}
                     <button 
                         onclick="joinSession({{ session.id }})"
-                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
                         Join Session
                     </button>
                     {% endif %}
@@ -139,64 +139,73 @@
 
         {% block extra_js %}
         <script>
-        function switchTab(tab) {
-            document.getElementById('sessions-content').classList.add('hidden');
-            document.getElementById('chat-content').classList.add('hidden');
-            document.getElementById(`${tab}-content`).classList.remove('hidden');
+            function switchTab(tab) {
+                document.getElementById('sessions-content').classList.add('hidden');
+                document.getElementById('chat-content').classList.add('hidden');
+                document.getElementById(`${tab}-content`).classList.remove('hidden');
             
-            document.querySelectorAll('nav button').forEach(button => {
-            button.classList.remove('text-indigo-600', 'border-indigo-600');
-            button.classList.add('text-gray-500', 'border-transparent');
+                document.querySelectorAll('nav button').forEach(button => {
+                    button.classList.remove('text-indigo-600', 'border-indigo-600');
+                    button.classList.add('text-gray-500', 'border-transparent');
+                });
+            
+                document.getElementById(`${tab}-tab`).classList.remove('text-gray-500', 'border-transparent');
+                document.getElementById(`${tab}-tab`).classList.add('text-indigo-600', 'border-indigo-600');
+            
+                // Save the selected tab in localStorage
+                localStorage.setItem('selectedTab', tab);
+            }
+            
+            // On page load, restore the selected tab
+            document.addEventListener('DOMContentLoaded', () => {
+                const selectedTab = localStorage.getItem('selectedTab') || 'sessions';
+                switchTab(selectedTab);
             });
-            
-            document.getElementById(`${tab}-tab`).classList.remove('text-gray-500', 'border-transparent');
-            document.getElementById(`${tab}-tab`).classList.add('text-indigo-600', 'border-indigo-600');
-        }
 
-        async function joinSession(sessionId) {
-            try {
-            const response = await fetch(`{% url 'app:join_session' 0 %}`.replace('0', sessionId), {
-                method: 'POST',
-                headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                },
-            });
-            const data = await response.json();
-            if (data.status === 'success') {
-                window.location.href = `/session/${sessionId}?token=${data.token}`;
-            } else {
-                alert(data.message);
+            async function joinSession(sessionId) {
+                try {
+                    const response = await fetch(`{% url 'app:join_session' 0 %}`.replace('0', sessionId), {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        },
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        window.location.href = `/session/${sessionId}?token=${data.token}`;
+                    } else {
+                        alert(data.message || 'Failed to join session');
+                    }
+                } catch (error) {
+                    console.error('Error joining session:', error);
+                    alert('An error occurred while joining the session');
+                }
             }
-            } catch (error) {
-            console.error('Error joining session:', error);
-            alert('Failed to join session');
-            }
-        }
 
         async function loadChat(userId) {
-            document.getElementById('recipient-id').value = userId;
             const messagesContainer = document.getElementById('messages-container');
-            messagesContainer.innerHTML = '<div class="text-center">Loading messages...</div>';
-            
+            messagesContainer.innerHTML = '<div class="text-center py-4">Loading messages...</div>';
+        
             try {
-            const response = await fetch(`/api/messages/${userId}/`);
-            const messages = await response.json();
-            
-            messagesContainer.innerHTML = messages.map(msg => `
-                <div class="flex items-start ${msg.sender === currentUserId ? 'justify-end' : ''}">
-                <div class="${msg.sender === currentUserId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg px-4 py-2 max-w-xs">
-                    <p class="text-sm">${msg.content}</p>
-                    <span class="text-xs ${msg.sender === currentUserId ? 'text-indigo-200' : 'text-gray-500'} mt-1">
-                    ${new Date(msg.created_at).toLocaleTimeString()}
-                    </span>
-                </div>
-                </div>
-            `).join('');
-            
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                const response = await fetch(`/api/messages/${userId}/`);
+                const messages = await response.json();
+        
+                messagesContainer.innerHTML = messages.map(msg => `
+                    <div class="flex items-start ${msg.sender === currentUserId ? 'justify-end' : ''}">
+                        <div class="${msg.sender === currentUserId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg px-4 py-2 max-w-xs">
+                            <p class="text-sm">${msg.content}</p>
+                            <span class="text-xs ${msg.sender === currentUserId ? 'text-indigo-200' : 'text-gray-500'} mt-1">
+                                ${new Date(msg.created_at).toLocaleTimeString()}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+        
+                // Scroll to the bottom of the messages container
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             } catch (error) {
-            console.error('Error loading messages:', error);
-            messagesContainer.innerHTML = '<div class="text-center text-red-500">Failed to load messages</div>';
+                console.error('Error loading messages:', error);
+                messagesContainer.innerHTML = '<div class="text-center text-red-500 py-4">Failed to load messages</div>';
             }
         }
 
