@@ -16,4 +16,5 @@ urlpatterns = [
     path('agora/token/<str:channel_name>/', views.generate_agora_token, name='agora_token'),
     path('session/<int:session_id>/join/', views.join_session, name='join_session'),
     path('messages/send/', views.send_message, name='send_message'),
+    path('api/messages/<int:user_id>/', views.get_messages, name='get_messages'),
 ]

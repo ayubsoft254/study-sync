@@ -182,32 +182,35 @@
                 }
             }
 
-        async function loadChat(userId) {
-            const messagesContainer = document.getElementById('messages-container');
-            messagesContainer.innerHTML = '<div class="text-center py-4">Loading messages...</div>';
-        
-            try {
-                const response = await fetch(`/api/messages/${userId}/`);
-                const messages = await response.json();
-        
-                messagesContainer.innerHTML = messages.map(msg => `
-                    <div class="flex items-start ${msg.sender === currentUserId ? 'justify-end' : ''}">
-                        <div class="${msg.sender === currentUserId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg px-4 py-2 max-w-xs">
-                            <p class="text-sm">${msg.content}</p>
-                            <span class="text-xs ${msg.sender === currentUserId ? 'text-indigo-200' : 'text-gray-500'} mt-1">
-                                ${new Date(msg.created_at).toLocaleTimeString()}
-                            </span>
+            async function loadChat(userId) {
+                const messagesContainer = document.getElementById('messages-container');
+                messagesContainer.innerHTML = '<div class="text-center py-4">Loading messages...</div>';
+            
+                try {
+                    const response = await fetch(`/api/messages/${userId}/`);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch messages');
+                    }
+                    const messages = await response.json();
+            
+                    messagesContainer.innerHTML = messages.map(msg => `
+                        <div class="flex items-start ${msg.sender === {{ request.user.id }} ? 'justify-end' : ''}">
+                            <div class="${msg.sender === {{ request.user.id }} ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg px-4 py-2 max-w-xs">
+                                <p class="text-sm">${msg.content}</p>
+                                <span class="text-xs ${msg.sender === {{ request.user.id }} ? 'text-indigo-200' : 'text-gray-500'} mt-1">
+                                    ${new Date(msg.created_at).toLocaleTimeString()}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
-        
-                // Scroll to the bottom of the messages container
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            } catch (error) {
-                console.error('Error loading messages:', error);
-                messagesContainer.innerHTML = '<div class="text-center text-red-500 py-4">Failed to load messages</div>';
+                    `).join('');
+            
+                    // Scroll to the bottom of the messages container
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } catch (error) {
+                    console.error('Error loading messages:', error);
+                    messagesContainer.innerHTML = '<div class="text-center text-red-500 py-4">Failed to load messages</div>';
+                }
             }
-        }
 
         async function sendMessage(event) {
             event.preventDefault();

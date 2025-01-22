@@ -316,6 +316,8 @@ def sessions_view(request):
         'sessions': sessions,
         'course_members': course_members,
         'role': 'mentor' if hasattr(request.user, 'mentor') else 'mentee',
+        'currentUserId': request.user.id,
+        'now': timezone.now(),
     }
     return render(request, 'app/sessions.html', context)
 
@@ -374,3 +376,22 @@ def join_session(request, session_id):
             'channel': session.call.room_id
         })
     return JsonResponse({'status': 'error', 'message': 'Session is full'}, status=400)
+
+@login_required
+def get_messages(request, user_id):
+    try:
+        other_user = User.objects.get(id=user_id)
+        # Fetch messages between the current user and the other user
+        chat = Chat.objects.filter(
+            participants=request.user
+        ).filter(
+            participants=other_user
+        ).first()
+        
+        if chat:
+            messages = chat.messages.all().values('id', 'sender', 'content', 'created_at')
+            return JsonResponse(list(messages), safe=False)
+        else:
+            return JsonResponse([], safe=False)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
