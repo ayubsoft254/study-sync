@@ -212,6 +212,7 @@ class Chat(models.Model):
     )
     chat_type = models.CharField(max_length=10, choices=CHAT_TYPES)
     participants = models.ManyToManyField(User, related_name='chats')
+    content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
