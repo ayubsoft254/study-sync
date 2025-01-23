@@ -2,7 +2,6 @@ Django
 python-decouple
 channels-redis
 channels
-channels-redis
 django-crispy-forms
 crispy-tailwind
 Pillow
@@ -20,4 +19,6 @@ django-widget-tweaks
 slippers
 djangorestframework
 agora-token-builder
+psycopg2
 agora-rtc-sdk-ng
+
