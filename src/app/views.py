@@ -485,6 +485,12 @@ def join_session(request, session_id):
     try:
         session = get_object_or_404(MentorSession, id=session_id)
         
+        # Check if the mentee's course matches any of the session mentor's courses
+        if session.mentor.courses.filter(id=request.user.mentee.course.id).exists():
+            pass  # Valid course match
+        else:
+            return JsonResponse({'status': 'error', 'message': 'You are not enrolled in this course'}, status=403)
+        
         # Check if mentee is already in the session
         existing_attendance = SessionAttendance.objects.filter(
             session=session,
@@ -492,8 +498,9 @@ def join_session(request, session_id):
         ).first()
         
         if existing_attendance:
-            # Already joined, return existing token
-            token = generate_agora_token(session.call.room_id)
+            # Already joined, generate new token
+            from .utils import generate_agora_token as gen_token
+            token = gen_token(session.call.room_id, request.user.id)
             return JsonResponse({
                 'status': 'success',
                 'token': token,
@@ -504,8 +511,9 @@ def join_session(request, session_id):
         if session.is_full:
             return JsonResponse({'status': 'error', 'message': 'Session is full'}, status=400)
         
-        # Check if session hasn't started yet or is still active
-        if not session.can_start and session.call.is_active:
+        # Check if session can be started
+        now = timezone.now()
+        if now < session.scheduled_time:
             return JsonResponse({'status': 'error', 'message': 'Session has not started yet'}, status=400)
         
         # Create attendance record
@@ -514,7 +522,15 @@ def join_session(request, session_id):
             mentee=request.user.mentee
         )
         
-        token = generate_agora_token(session.call.room_id)
+        # Start the call if not already started
+        if not session.call.started_at:
+            session.call.started_at = now
+            session.call.save(update_fields=['started_at'])
+        
+        # Generate token
+        from .utils import generate_agora_token as gen_token
+        token = gen_token(session.call.room_id, request.user.id)
+        
         return JsonResponse({
             'status': 'success',
             'token': token,
