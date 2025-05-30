@@ -1,28 +1,33 @@
-# views.py
-from agora_token_builder import RtcTokenBuilder
 import time
-import random
 from django.conf import settings
 
-from django.http import JsonResponse
-
-def generate_agora_token(request, channel_name):
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': 'Authentication required'}, status=401)
-    
-    appID = settings.AGORA_APP_ID
-    appCertificate = settings.AGORA_APP_CERTIFICATE
-    uid = random.randint(1, 230)
-    expirationTime = 3600  # Token expires in 1 hour
-    currentTimestamp = int(time.time())
-    privilegeExpiredTs = currentTimestamp + expirationTime
-    
-    token = RtcTokenBuilder.buildTokenWithUid(
-        appID, appCertificate, channel_name, uid, 1, privilegeExpiredTs
-    )
-    
-    return JsonResponse({
-        'token': token,
-        'uid': uid,
-        'channel': channel_name
-    })
+def generate_agora_token(channel_name, uid=0, expiration_time=3600):
+    """
+    Generate Agora token for video calling
+    You'll need to install agora-token-builder: pip install agora-token-builder
+    """
+    try:
+        from agora_token_builder import RtcTokenBuilder
+        
+        # These should be in your Django settings
+        app_id = getattr(settings, 'AGORA_APP_ID', 'your-agora-app-id')
+        app_certificate = getattr(settings, 'AGORA_APP_CERTIFICATE', 'your-agora-certificate')
+        
+        # Role: 1 for publisher, 2 for subscriber
+        role = 1
+        
+        # Calculate expiration timestamp
+        current_timestamp = int(time.time())
+        privilege_expired_ts = current_timestamp + expiration_time
+        
+        token = RtcTokenBuilder.buildTokenWithUid(
+            app_id, app_certificate, channel_name, uid, role, privilege_expired_ts
+        )
+        
+        return token
+    except ImportError:
+        # Fallback for development - return a dummy token
+        return f"dummy-token-{channel_name}-{uid}"
+    except Exception as e:
+        print(f"Error generating Agora token: {str(e)}")
+        return f"error-token-{channel_name}"
