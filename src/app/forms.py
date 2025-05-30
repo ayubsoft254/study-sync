@@ -1,48 +1,43 @@
 from django import forms
-from django.contrib.auth.models import User
-from .models import School, Course, Mentee, Mentor
+from .models import School, Course
 
 class ProfileForm(forms.Form):
     ROLE_CHOICES = [
-        ('mentee', 'Mentee'),
         ('mentor', 'Mentor'),
+        ('mentee', 'Mentee'),
     ]
     
     role = forms.ChoiceField(
         choices=ROLE_CHOICES,
         widget=forms.RadioSelect,
-        label="I want to join as a"
+        required=True
     )
     
-    # Fields for Mentee
+    # Fields for mentee
     school = forms.ModelChoiceField(
         queryset=School.objects.all(),
         required=False,
-        label="School",
-        help_text="Select your school (required for mentees)"
+        empty_label="Select a school"
     )
     
     course = forms.ModelChoiceField(
         queryset=Course.objects.all(),
         required=False,
-        label="Course",
-        help_text="Select your course (required for mentees)"
+        empty_label="Select a course"
     )
     
-    # Fields for Mentor
+    # Fields for mentor
     expertise = forms.CharField(
-        widget=forms.Textarea(attrs={'rows': 3}),
+        widget=forms.Textarea(attrs={'rows': 4}),
         required=False,
-        label="Areas of Expertise",
-        help_text="Required for mentors: List your skills and areas of expertise"
+        help_text="Describe your areas of expertise"
     )
     
     courses = forms.ModelMultipleChoiceField(
         queryset=Course.objects.all(),
-        required=False,
         widget=forms.CheckboxSelectMultiple,
-        label="Courses you can mentor",
-        help_text="Select the courses you're qualified to mentor (required for mentors)"
+        required=False,
+        help_text="Select courses you can mentor"
     )
     
     def clean(self):
@@ -54,11 +49,10 @@ class ProfileForm(forms.Form):
                 raise forms.ValidationError("School is required for mentees")
             if not cleaned_data.get('course'):
                 raise forms.ValidationError("Course is required for mentees")
-                
         elif role == 'mentor':
             if not cleaned_data.get('expertise'):
                 raise forms.ValidationError("Expertise is required for mentors")
             if not cleaned_data.get('courses'):
-                raise forms.ValidationError("Please select at least one course to mentor")
-                
+                raise forms.ValidationError("At least one course is required for mentors")
+        
         return cleaned_data
