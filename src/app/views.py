@@ -327,13 +327,14 @@ def send_message(request):
         return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
     recipient_id = request.POST.get('recipient')
-    message = request.POST.get('message')
+    message_content = request.POST.get('message')
 
-    if not recipient_id or not message:
+    if not recipient_id or not message_content:
         return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
 
     try:
         recipient = User.objects.get(id=recipient_id)
+        
         # Ensure the recipient is part of the same course
         if hasattr(request.user, 'mentee') and hasattr(recipient, 'mentee'):
             if request.user.mentee.course != recipient.mentee.course:
@@ -341,18 +342,34 @@ def send_message(request):
         elif hasattr(request.user, 'mentor') and hasattr(recipient, 'mentee'):
             if recipient.mentee.course not in request.user.mentor.courses.all():
                 return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
+        elif hasattr(request.user, 'mentee') and hasattr(recipient, 'mentor'):
+            if request.user.mentee.course not in recipient.mentor.courses.all():
+                return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
         else:
             return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
 
-        chat, created = Chat.objects.get_or_create(
+        # Get or create private chat between users
+        chat = Chat.objects.filter(
             chat_type='private',
-            participants__in=[request.user, recipient]
-        )
-        chat.messages.create(
+            participants=request.user
+        ).filter(
+            participants=recipient
+        ).first()
+        
+        if not chat:
+            chat = Chat.objects.create(chat_type='private')
+            chat.participants.add(request.user, recipient)
+        
+        # Create the message
+        from .models import Message
+        Message.objects.create(
+            chat=chat,
             sender=request.user,
-            content=message
+            content=message_content
         )
+        
         return JsonResponse({'status': 'success'})
+        
     except User.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Recipient not found'}, status=404)
     except Exception as e:
@@ -381,17 +398,24 @@ def join_session(request, session_id):
 def get_messages(request, user_id):
     try:
         other_user = User.objects.get(id=user_id)
-        # Fetch messages between the current user and the other user
+        
+        # Fetch chat between the current user and the other user
         chat = Chat.objects.filter(
+            chat_type='private',
             participants=request.user
         ).filter(
             participants=other_user
         ).first()
         
         if chat:
-            messages = chat.messages.all().values('id', 'sender', 'content', 'created_at')
+            messages = chat.messages.select_related('sender').values(
+                'id', 'sender__id', 'sender__username', 'content', 'created_at'
+            ).order_by('created_at')
             return JsonResponse(list(messages), safe=False)
         else:
             return JsonResponse([], safe=False)
+            
     except User.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
