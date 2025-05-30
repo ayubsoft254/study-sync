@@ -17,5 +17,6 @@ urlpatterns = [
     path('session/<int:session_id>/join/', views.join_session, name='join_session'),
     path('messages/send/', views.send_message, name='send_message'),
     path('api/messages/<int:user_id>/', views.get_messages, name='get_messages'),
+    path('chats/', views.chat_list, name='chat_list'),  # Add this line
     path('chat/<int:user_id>/', views.chat_view, name='chat'),
 ]
