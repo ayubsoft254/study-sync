@@ -564,3 +564,67 @@ def generate_agora_token(request, channel_name):
         return JsonResponse({
             'error': f'Failed to generate token: {str(e)}'
         }, status=500)
+
+@login_required
+def chat_view(request, user_id):
+    """View for displaying chat between two users"""
+    try:
+        other_user = get_object_or_404(User, id=user_id)
+        
+        # Verify user permissions (same validation as get_messages)
+        if not (hasattr(request.user, 'mentee') or hasattr(request.user, 'mentor')):
+            messages.error(request, 'Please complete your profile setup')
+            return redirect('app:account_profile')
+        
+        if not (hasattr(other_user, 'mentee') or hasattr(other_user, 'mentor')):
+            messages.error(request, 'User has not completed profile setup')
+            return redirect('app:sessions')
+        
+        # Verify users can chat (same course validation)
+        valid_chat = False
+        
+        if hasattr(request.user, 'mentee') and hasattr(other_user, 'mentee'):
+            if request.user.mentee.course == other_user.mentee.course:
+                valid_chat = True
+        elif hasattr(request.user, 'mentor') and hasattr(other_user, 'mentee'):
+            if other_user.mentee.course in request.user.mentor.courses.all():
+                valid_chat = True
+        elif hasattr(request.user, 'mentee') and hasattr(other_user, 'mentor'):
+            if request.user.mentee.course in other_user.mentor.courses.all():
+                valid_chat = True
+        elif hasattr(request.user, 'mentor') and hasattr(other_user, 'mentor'):
+            sender_courses = set(request.user.mentor.courses.all())
+            recipient_courses = set(other_user.mentor.courses.all())
+            if sender_courses.intersection(recipient_courses):
+                valid_chat = True
+        
+        if not valid_chat:
+            messages.error(request, 'You can only chat with users in your courses')
+            return redirect('app:sessions')
+        
+        # Get or create chat
+        chat = Chat.objects.filter(
+            chat_type='private',
+            participants=request.user
+        ).filter(
+            participants=other_user
+        ).first()
+        
+        if not chat:
+            chat = Chat.objects.create(chat_type='private')
+            chat.participants.add(request.user, other_user)
+        
+        # Get messages
+        chat_messages = chat.messages.select_related('sender').order_by('created_at')
+        
+        context = {
+            'chat': chat,
+            'other_user': other_user,
+            'messages': chat_messages,
+        }
+        
+        return render(request, 'app/chat.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading chat: {str(e)}')
+        return redirect('app:sessions')
