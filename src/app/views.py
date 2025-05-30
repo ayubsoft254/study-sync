@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db.models import Avg, Count
 from django.core.exceptions import PermissionDenied
-from .models import Chat, Mentor, User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Mentee
+from .models import Chat, Message, Mentor, User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Mentee
 import uuid
 from typing import Dict, Any
 from django.urls import reverse
@@ -332,21 +332,47 @@ def send_message(request):
     if not recipient_id or not message_content:
         return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
 
+    # Validate recipient_id is a valid integer
+    try:
+        recipient_id = int(recipient_id)
+    except (ValueError, TypeError):
+        return JsonResponse({'status': 'error', 'message': 'Invalid recipient ID'}, status=400)
+
     try:
         recipient = User.objects.get(id=recipient_id)
         
+        # Check if sender has a profile
+        if not (hasattr(request.user, 'mentee') or hasattr(request.user, 'mentor')):
+            return JsonResponse({'status': 'error', 'message': 'Please complete your profile setup'}, status=403)
+        
+        # Check if recipient has a profile
+        if not (hasattr(recipient, 'mentee') or hasattr(recipient, 'mentor')):
+            return JsonResponse({'status': 'error', 'message': 'Recipient has not completed profile setup'}, status=403)
+        
         # Ensure the recipient is part of the same course
+        valid_recipient = False
+        
         if hasattr(request.user, 'mentee') and hasattr(recipient, 'mentee'):
-            if request.user.mentee.course != recipient.mentee.course:
-                return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
+            # Both are mentees - check same course
+            if request.user.mentee.course == recipient.mentee.course:
+                valid_recipient = True
         elif hasattr(request.user, 'mentor') and hasattr(recipient, 'mentee'):
-            if recipient.mentee.course not in request.user.mentor.courses.all():
-                return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
+            # Sender is mentor, recipient is mentee
+            if recipient.mentee.course in request.user.mentor.courses.all():
+                valid_recipient = True
         elif hasattr(request.user, 'mentee') and hasattr(recipient, 'mentor'):
-            if request.user.mentee.course not in recipient.mentor.courses.all():
-                return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Invalid recipient'}, status=403)
+            # Sender is mentee, recipient is mentor
+            if request.user.mentee.course in recipient.mentor.courses.all():
+                valid_recipient = True
+        elif hasattr(request.user, 'mentor') and hasattr(recipient, 'mentor'):
+            # Both are mentors - check if they share any courses
+            sender_courses = set(request.user.mentor.courses.all())
+            recipient_courses = set(recipient.mentor.courses.all())
+            if sender_courses.intersection(recipient_courses):
+                valid_recipient = True
+        
+        if not valid_recipient:
+            return JsonResponse({'status': 'error', 'message': 'You can only message users in your courses'}, status=403)
 
         # Get or create private chat between users
         chat = Chat.objects.filter(
@@ -361,43 +387,68 @@ def send_message(request):
             chat.participants.add(request.user, recipient)
         
         # Create the message
-        from .models import Message
-        Message.objects.create(
+        message = Message.objects.create(
             chat=chat,
             sender=request.user,
-            content=message_content
+            content=message_content.strip()
         )
         
-        return JsonResponse({'status': 'success'})
+        # Update chat's updated_at timestamp
+        chat.updated_at = timezone.now()
+        chat.save(update_fields=['updated_at'])
+        
+        return JsonResponse({
+            'status': 'success',
+            'message_id': message.id,
+            'timestamp': message.created_at.isoformat()
+        })
         
     except User.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Recipient not found'}, status=404)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-@login_required
-def join_session(request, session_id):
-    if not hasattr(request.user, 'mentee'):
-        return JsonResponse({'status': 'error', 'message': 'Only mentees can join sessions'}, status=403)
-
-    session = get_object_or_404(MentorSession, id=session_id)
-    if not session.is_full:
-        SessionAttendance.objects.create(
-            session=session,
-            mentee=request.user.mentee
-        )
-        token = generate_agora_token(session.call.room_id)
-        return JsonResponse({
-            'status': 'success',
-            'token': token,
-            'channel': session.call.room_id
-        })
-    return JsonResponse({'status': 'error', 'message': 'Session is full'}, status=400)
+        # Log the error in production
+        print(f"Error in send_message: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': 'An unexpected error occurred'}, status=500)
 
 @login_required
 def get_messages(request, user_id):
     try:
+        # Validate user_id
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid user ID'}, status=400)
+        
         other_user = User.objects.get(id=user_id)
+        
+        # Check if current user has a profile
+        if not (hasattr(request.user, 'mentee') or hasattr(request.user, 'mentor')):
+            return JsonResponse({'error': 'Please complete your profile setup'}, status=403)
+        
+        # Check if other user has a profile
+        if not (hasattr(other_user, 'mentee') or hasattr(other_user, 'mentor')):
+            return JsonResponse({'error': 'User has not completed profile setup'}, status=403)
+        
+        # Verify users can chat (same course validation as in send_message)
+        valid_chat = False
+        
+        if hasattr(request.user, 'mentee') and hasattr(other_user, 'mentee'):
+            if request.user.mentee.course == other_user.mentee.course:
+                valid_chat = True
+        elif hasattr(request.user, 'mentor') and hasattr(other_user, 'mentee'):
+            if other_user.mentee.course in request.user.mentor.courses.all():
+                valid_chat = True
+        elif hasattr(request.user, 'mentee') and hasattr(other_user, 'mentor'):
+            if request.user.mentee.course in other_user.mentor.courses.all():
+                valid_chat = True
+        elif hasattr(request.user, 'mentor') and hasattr(other_user, 'mentor'):
+            sender_courses = set(request.user.mentor.courses.all())
+            recipient_courses = set(other_user.mentor.courses.all())
+            if sender_courses.intersection(recipient_courses):
+                valid_chat = True
+        
+        if not valid_chat:
+            return JsonResponse({'error': 'You can only chat with users in your courses'}, status=403)
         
         # Fetch chat between the current user and the other user
         chat = Chat.objects.filter(
@@ -411,6 +462,10 @@ def get_messages(request, user_id):
             messages = chat.messages.select_related('sender').values(
                 'id', 'sender__id', 'sender__username', 'content', 'created_at'
             ).order_by('created_at')
+            
+            # Mark messages as read (optional - you might want to add this later)
+            # chat.messages.filter(sender=other_user, is_read=False).update(is_read=True)
+            
             return JsonResponse(list(messages), safe=False)
         else:
             return JsonResponse([], safe=False)
@@ -418,4 +473,55 @@ def get_messages(request, user_id):
     except User.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=404)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        # Log the error in production
+        print(f"Error in get_messages: {str(e)}")
+        return JsonResponse({'error': 'An unexpected error occurred'}, status=500)
+
+@login_required
+def join_session(request, session_id):
+    if not hasattr(request.user, 'mentee'):
+        return JsonResponse({'status': 'error', 'message': 'Only mentees can join sessions'}, status=403)
+
+    try:
+        session = get_object_or_404(MentorSession, id=session_id)
+        
+        # Check if mentee is already in the session
+        existing_attendance = SessionAttendance.objects.filter(
+            session=session,
+            mentee=request.user.mentee
+        ).first()
+        
+        if existing_attendance:
+            # Already joined, return existing token
+            token = generate_agora_token(session.call.room_id)
+            return JsonResponse({
+                'status': 'success',
+                'token': token,
+                'channel': session.call.room_id,
+                'message': 'Already joined session'
+            })
+        
+        if session.is_full:
+            return JsonResponse({'status': 'error', 'message': 'Session is full'}, status=400)
+        
+        # Check if session hasn't started yet or is still active
+        if not session.can_start and session.call.is_active:
+            return JsonResponse({'status': 'error', 'message': 'Session has not started yet'}, status=400)
+        
+        # Create attendance record
+        SessionAttendance.objects.create(
+            session=session,
+            mentee=request.user.mentee
+        )
+        
+        token = generate_agora_token(session.call.room_id)
+        return JsonResponse({
+            'status': 'success',
+            'token': token,
+            'channel': session.call.room_id,
+            'message': 'Successfully joined session'
+        })
+        
+    except Exception as e:
+        print(f"Error in join_session: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': 'Failed to join session'}, status=500)
