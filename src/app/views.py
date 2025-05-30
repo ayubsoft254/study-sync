@@ -5,6 +5,7 @@ from django.views.generic import ListView, CreateView, DetailView
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.contrib import messages
+from django.db import models
 from django.db.models import Avg, Count, Q  # Add Q import here
 from django.core.exceptions import PermissionDenied
 from .models import Chat, Message, Mentor, User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Mentee
