@@ -182,7 +182,38 @@
                 }
             }
 
+            let currentChatUserId = null;
+            let messageRefreshInterval = null;
+            
+            function startMessageRefresh(userId) {
+                currentChatUserId = userId;
+                
+                // Clear existing interval
+                if (messageRefreshInterval) {
+                    clearInterval(messageRefreshInterval);
+                }
+                
+                // Refresh messages every 3 seconds
+                messageRefreshInterval = setInterval(() => {
+                    if (currentChatUserId) {
+                        loadChat(currentChatUserId);
+                    }
+                }, 3000);
+            }
+            
+            function stopMessageRefresh() {
+                if (messageRefreshInterval) {
+                    clearInterval(messageRefreshInterval);
+                    messageRefreshInterval = null;
+                }
+                currentChatUserId = null;
+            }
+            
+            // Update the loadChat function to start auto-refresh
             async function loadChat(userId) {
+                // Start auto-refresh for this chat
+                startMessageRefresh(userId);
+                
                 const messagesContainer = document.getElementById('messages-container');
                 messagesContainer.innerHTML = '<div class="text-center py-4">Loading messages...</div>';
                 
@@ -248,6 +279,9 @@
                     alert('Failed to send message');
                 }
             }
+
+            // Clean up when leaving the page
+            window.addEventListener('beforeunload', stopMessageRefresh);
         </script>
         {% endblock %}
     </body>
