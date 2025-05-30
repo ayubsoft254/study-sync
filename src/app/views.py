@@ -5,7 +5,7 @@ from django.views.generic import ListView, CreateView, DetailView
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.contrib import messages
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q  # Add Q import here
 from django.core.exceptions import PermissionDenied
 from .models import Chat, Message, Mentor, User, MentorSession, SessionAttendance, MentorRating, Resource, Call, Mentee
 import uuid
@@ -288,29 +288,40 @@ def sessions_view(request):
     # Check if the user is a mentee or mentor
     if hasattr(user, 'mentee'):
         mentee = user.mentee
-        # Filter sessions where the mentee is a participant
+        # Filter sessions where the mentee can participate
         sessions = MentorSession.objects.filter(
-            participants=mentee  # Use the mentee instance here
-        ).select_related('mentor').prefetch_related('participants')
-        # Get all users in the same course as the mentee
+            mentor__courses=mentee.course  # Filter by mentor's courses that include mentee's course
+        ).select_related('mentor', 'call').prefetch_related('participants')
+        
+        # Get all users in the same course as the mentee (exclude current user)
         course_members = User.objects.filter(
-            mentee__course=mentee.course
-        ).select_related('mentee', 'mentor')
+            models.Q(mentee__course=mentee.course) | 
+            models.Q(mentor__courses=mentee.course)
+        ).exclude(id=user.id).select_related('mentee', 'mentor').distinct()
+        
     elif hasattr(user, 'mentor'):
         mentor = user.mentor
         # Filter sessions created by the mentor
         sessions = MentorSession.objects.filter(
             mentor=mentor
-        ).select_related('mentor').prefetch_related('participants')
-        # Get all users in the courses taught by the mentor
+        ).select_related('mentor', 'call').prefetch_related('participants')
+        
+        # Get all users in the courses taught by the mentor (exclude current user)
         course_members = User.objects.filter(
-            mentee__course__in=mentor.courses.all()
-        ).select_related('mentee', 'mentor')
+            models.Q(mentee__course__in=mentor.courses.all()) | 
+            models.Q(mentor__courses__in=mentor.courses.all())
+        ).exclude(id=user.id).select_related('mentee', 'mentor').distinct()
+        
     else:
         # Handle case where the user is neither a mentee nor a mentor
         sessions = MentorSession.objects.none()
         course_members = User.objects.none()
         messages.info(request, "Please complete your profile setup to access sessions.")
+
+    # Debug: Print course_members to check if they have IDs
+    print(f"Course members count: {course_members.count()}")
+    for member in course_members:
+        print(f"Member: {member.username}, ID: {member.id}")
 
     context = {
         'sessions': sessions,
