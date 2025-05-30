@@ -147,8 +147,8 @@ ACCOUNT_EMAIL_NOTIFICATIONS = True
 ACCOUNT_LOGIN_BY_CODE_ENABLED = True
 
 # settings.py
-AGORA_APP_ID = '7e8063f7b1c645698206bebaff7eafb3'
-AGORA_APP_CERTIFICATE = 'cd510bfa1b8b49818d3614ac71eb3f11'
+AGORA_APP_ID = config('AGORA_APP_ID', default='your-agora-app-id')
+AGORA_APP_CERTIFICATE = config('AGORA_APP_CERTIFICATE', default='your-agora-certificate')
 
 AUTHENTICATION_BACKENDS = [    
     # Needed to login by username in Django admin, regardless of `allauth`
