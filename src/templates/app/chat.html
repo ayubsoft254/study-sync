@@ -34,25 +34,27 @@
         <div class="max-w-7xl mx-auto">
             <div class="h-16 flex items-center justify-between px-4">
                 <div class="flex items-center space-x-4">
-                    <a href="{% url 'dashboard' %}" class="text-gray-500 hover:text-gray-700">
+                    <a href="{% url 'app:sessions' %}" class="text-gray-500 hover:text-gray-700">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                         </svg>
                     </a>
                     <div>
-                        <h1 class="text-lg font-semibold text-gray-900">{{ room.name }}</h1>
+                        <h1 class="text-lg font-semibold text-gray-900">
+                            {{ other_user.get_full_name|default:other_user.username }}
+                        </h1>
                         <p class="text-sm text-gray-500">
-                            {% if room.room_type == 'private' %}
+                            {% if chat.chat_type == 'private' %}
                                 Private Chat
                             {% else %}
-                                Group Chat • {{ room.participants.count }} participants
+                                Group Chat • {{ chat.participants.count }} participants
                             {% endif %}
                         </p>
                     </div>
                 </div>
                 
                 <div class="flex items-center space-x-3">
-                    {% if room.room_type != 'private' %}
+                    {% if chat.chat_type != 'private' %}
                         <button type="button" id="showParticipants" 
                                 class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,31 +74,31 @@
             <!-- Messages -->
             <div class="flex-1 overflow-y-auto messages-container p-4" id="messagesContainer">
                 {% for message in messages %}
-                    <div class="flex {% if message.sender.user == request.user %}justify-end{% endif %} mb-4">
-                        {% if message.sender.user != request.user %}
+                    <div class="flex {% if message.sender == request.user %}justify-end{% endif %} mb-4">
+                        {% if message.sender != request.user %}
                             <div class="flex-shrink-0 mr-3">
-                                {% if message.sender.avatar %}
-                                    <img class="h-8 w-8 rounded-full" src="{{ message.sender.avatar.url }}" alt="{{ message.sender.user.get_full_name }}">
-                                {% else %}
-                                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-500">
-                                            {{ message.sender.user.get_full_name|first|upper }}
-                                        </span>
-                                    </div>
-                                {% endif %}
+                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-gray-500">
+                                        {{ message.sender.get_full_name|default:message.sender.username|first|upper }}
+                                    </span>
+                                </div>
                             </div>
                         {% endif %}
-                        <div class="message-bubble {% if message.sender.user == request.user %}bg-indigo-600 text-white{% else %}bg-white text-gray-900{% endif %} rounded-lg px-4 py-2 shadow-sm">
-                            {% if message.sender.user != request.user %}
-                                <p class="text-xs {% if message.sender.user == request.user %}text-indigo-200{% else %}text-gray-500{% endif %} mb-1">
-                                    {{ message.sender.user.get_full_name|default:message.sender.user.username }}
+                        <div class="message-bubble {% if message.sender == request.user %}bg-indigo-600 text-white{% else %}bg-white text-gray-900{% endif %} rounded-lg px-4 py-2 shadow-sm">
+                            {% if message.sender != request.user %}
+                                <p class="text-xs {% if message.sender == request.user %}text-indigo-200{% else %}text-gray-500{% endif %} mb-1">
+                                    {{ message.sender.get_full_name|default:message.sender.username }}
                                 </p>
                             {% endif %}
                             <p>{{ message.content }}</p>
-                            <span class="message-time block text-right {% if message.sender.user == request.user %}text-indigo-200{% else %}text-gray-500{% endif %}">
-                                {{ message.timestamp|time:"g:i A" }}
+                            <span class="message-time block text-right {% if message.sender == request.user %}text-indigo-200{% else %}text-gray-500{% endif %}">
+                                {{ message.created_at|time:"g:i A" }}
                             </span>
                         </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center text-gray-500 py-8">
+                        <p>No messages yet. Start the conversation!</p>
                     </div>
                 {% endfor %}
             </div>
@@ -105,19 +107,13 @@
             <div class="message-input bg-white border-t px-4 py-4">
                 <form id="messageForm" class="flex items-end space-x-4">
                     {% csrf_token %}
+                    <input type="hidden" name="recipient" value="{{ other_user.id }}">
                     <div class="flex-1">
                         <label for="message" class="sr-only">Type your message</label>
                         <div class="relative">
                             <textarea id="messageInput" name="message" rows="2"
                                     class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 resize-none"
                                     placeholder="Type your message..."></textarea>
-                            <div class="absolute right-2 bottom-2 flex items-center space-x-2">
-                                <button type="button" class="text-gray-400 hover:text-gray-600">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
-                                    </svg>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <button type="submit"
@@ -132,31 +128,29 @@
         </div>
 
         <!-- Participants Sidebar (for group chats) -->
-        {% if room.room_type != 'private' %}
+        {% if chat.chat_type != 'private' %}
             <div id="participantsSidebar" class="hidden lg:block w-64 border-l bg-white overflow-y-auto">
                 <div class="p-4">
                     <h2 class="text-lg font-medium text-gray-900 mb-4">Participants</h2>
                     <div class="space-y-4">
-                        {% for participant in room.participants.all %}
+                        {% for participant in chat.participants.all %}
                             <div class="flex items-center">
-                                {% if participant.avatar %}
-                                    <img class="h-8 w-8 rounded-full" src="{{ participant.avatar.url }}" alt="{{ participant.user.get_full_name }}">
-                                {% else %}
-                                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-500">
-                                            {{ participant.user.get_full_name|first|upper }}
-                                        </span>
-                                    </div>
-                                {% endif %}
+                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-gray-500">
+                                        {{ participant.get_full_name|default:participant.username|first|upper }}
+                                    </span>
+                                </div>
                                 <div class="ml-3">
                                     <p class="text-sm font-medium text-gray-900">
-                                        {{ participant.user.get_full_name|default:participant.user.username }}
+                                        {{ participant.get_full_name|default:participant.username }}
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        {% if participant == room.mentor %}
+                                        {% if participant.mentor %}
                                             Mentor
-                                        {% else %}
+                                        {% elif participant.mentee %}
                                             Student
+                                        {% else %}
+                                            User
                                         {% endif %}
                                     </p>
                                 </div>
@@ -185,58 +179,71 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     scrollToBottom();
 
-    // WebSocket Connection
-    const roomId = '{{ room.id }}';
-    const chatSocket = new WebSocket(
-        `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat/${roomId}/`
-    );
-
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        const isCurrentUser = data.sender_id === {{ request.user.id }};
-        
-        const messageHTML = `
-            <div class="flex ${isCurrentUser ? 'justify-end' : ''} mb-4">
-                ${!isCurrentUser ? `
-                    <div class="flex-shrink-0 mr-3">
-                        <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span class="text-sm font-medium text-gray-500">
-                                ${data.sender_name.charAt(0).toUpperCase()}
+    // Auto-refresh messages
+    let refreshInterval;
+    
+    function loadMessages() {
+        const recipientId = {{ other_user.id }};
+        fetch(`/api/messages/${recipientId}/`)
+            .then(response => response.json())
+            .then(messages => {
+                messagesContainer.innerHTML = messages.map(msg => `
+                    <div class="flex ${msg.sender__id === {{ request.user.id }} ? 'justify-end' : ''} mb-4">
+                        ${msg.sender__id !== {{ request.user.id }} ? `
+                            <div class="flex-shrink-0 mr-3">
+                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-gray-500">
+                                        ${msg.sender__username.charAt(0).toUpperCase()}
+                                    </span>
+                                </div>
+                            </div>
+                        ` : ''}
+                        <div class="message-bubble ${msg.sender__id === {{ request.user.id }} ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} rounded-lg px-4 py-2 shadow-sm">
+                            ${msg.sender__id !== {{ request.user.id }} ? `
+                                <p class="text-xs ${msg.sender__id === {{ request.user.id }} ? 'text-indigo-200' : 'text-gray-500'} mb-1">
+                                    ${msg.sender__username}
+                                </p>
+                            ` : ''}
+                            <p>${msg.content}</p>
+                            <span class="message-time block text-right ${msg.sender__id === {{ request.user.id }} ? 'text-indigo-200' : 'text-gray-500'}">
+                                ${new Date(msg.created_at).toLocaleTimeString()}
                             </span>
                         </div>
                     </div>
-                ` : ''}
-                <div class="message-bubble ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} rounded-lg px-4 py-2 shadow-sm">
-                    ${!isCurrentUser ? `
-                        <p class="text-xs ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'} mb-1">
-                            ${data.sender_name}
-                        </p>
-                    ` : ''}
-                    <p>${data.message}</p>
-                    <span class="message-time block text-right ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}">
-                        ${data.timestamp}
-                    </span>
-                </div>
-            </div>
-        `;
-        
-        messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
-        scrollToBottom();
-    };
+                `).join('');
+                scrollToBottom();
+            })
+            .catch(error => console.error('Error loading messages:', error));
+    }
+
+    // Start auto-refresh
+    refreshInterval = setInterval(loadMessages, 3000);
 
     // Handle message submission
     messageForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const message = messageInput.value.trim();
+        const formData = new FormData(messageForm);
         
-        if (message) {
-            chatSocket.send(JSON.stringify({
-                'message': message,
-                'room_id': roomId
-            }));
-            messageInput.value = '';
-            messageInput.focus();
-        }
+        fetch("{% url 'app:send_message' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                messageInput.value = '';
+                loadMessages(); // Reload messages immediately
+            } else {
+                alert(data.message || 'Failed to send message');
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            alert('Failed to send message');
+        });
     });
 
     // Handle Enter key for sending messages
@@ -256,14 +263,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle WebSocket connection status
-    chatSocket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
-    };
-
     // Cleanup on page unload
     window.addEventListener('beforeunload', function() {
-        chatSocket.close();
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
     });
 });
 </script>
