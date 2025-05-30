@@ -640,3 +640,40 @@ def chat_view(request, user_id):
     except Exception as e:
         messages.error(request, f'Error loading chat: {str(e)}')
         return redirect('app:sessions')
+
+@login_required
+def chat_list(request):
+    """View to show all chats for the current user"""
+    try:
+        # Get all chats where the user is a participant
+        user_chats = Chat.objects.filter(
+            participants=request.user
+        ).prefetch_related('participants', 'messages').annotate(
+            last_message_time=models.Max('messages__created_at'),
+            unread_count=models.Count('messages', filter=models.Q(messages__is_read=False, messages__sender__ne=request.user))
+        ).order_by('-last_message_time')
+        
+        # Get chat data with last message and other participant info
+        chat_data = []
+        for chat in user_chats:
+            if chat.chat_type == 'private':
+                # Get the other participant
+                other_participant = chat.participants.exclude(id=request.user.id).first()
+                if other_participant:
+                    last_message = chat.messages.order_by('-created_at').first()
+                    chat_data.append({
+                        'chat': chat,
+                        'other_user': other_participant,
+                        'last_message': last_message,
+                        'unread_count': chat.messages.filter(is_read=False, sender=other_participant).count()
+                    })
+        
+        context = {
+            'chat_data': chat_data,
+        }
+        
+        return render(request, 'app/chat_list.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading chats: {str(e)}')
+        return redirect('app:sessions')
