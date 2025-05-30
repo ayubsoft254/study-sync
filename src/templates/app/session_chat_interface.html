@@ -185,6 +185,9 @@
             async function loadChat(userId) {
                 const messagesContainer = document.getElementById('messages-container');
                 messagesContainer.innerHTML = '<div class="text-center py-4">Loading messages...</div>';
+                
+                // Set the recipient ID for sending messages
+                document.getElementById('recipient-id').value = userId;
             
                 try {
                     const response = await fetch(`/api/messages/${userId}/`);
@@ -194,10 +197,11 @@
                     const messages = await response.json();
             
                     messagesContainer.innerHTML = messages.map(msg => `
-                        <div class="flex items-start ${msg.sender === {{ request.user.id }} ? 'justify-end' : ''}">
-                            <div class="${msg.sender === {{ request.user.id }} ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg px-4 py-2 max-w-xs">
+                        <div class="flex items-start ${msg.sender__id === {{ request.user.id }} ? 'justify-end' : ''}">
+                            <div class="${msg.sender__id === {{ request.user.id }} ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg px-4 py-2 max-w-xs">
+                                ${msg.sender__id !== {{ request.user.id }} ? `<p class="text-xs mb-1 ${msg.sender__id === {{ request.user.id }} ? 'text-indigo-200' : 'text-gray-500'}">${msg.sender__username}</p>` : ''}
                                 <p class="text-sm">${msg.content}</p>
-                                <span class="text-xs ${msg.sender === {{ request.user.id }} ? 'text-indigo-200' : 'text-gray-500'} mt-1">
+                                <span class="text-xs ${msg.sender__id === {{ request.user.id }} ? 'text-indigo-200' : 'text-gray-500'} mt-1 block">
                                     ${new Date(msg.created_at).toLocaleTimeString()}
                                 </span>
                             </div>
@@ -212,31 +216,38 @@
                 }
             }
 
-        async function sendMessage(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            
-            try {
-            const response = await fetch("{% url 'app:send_message' %}", {
-                method: 'POST',
-                body: formData,
-                headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                },
-            });
-            
-            if (response.ok) {
-                form.reset();
-                loadChat(document.getElementById('recipient-id').value);
-            } else {
-                alert('Failed to send message');
+            async function sendMessage(event) {
+                event.preventDefault();
+                const form = event.target;
+                const formData = new FormData(form);
+                
+                const recipientId = document.getElementById('recipient-id').value;
+                if (!recipientId) {
+                    alert('Please select a chat first');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch("{% url 'app:send_message' %}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        },
+                    });
+                    
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        form.reset();
+                        loadChat(recipientId);
+                    } else {
+                        alert(data.message || 'Failed to send message');
+                    }
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    alert('Failed to send message');
+                }
             }
-            } catch (error) {
-            console.error('Error sending message:', error);
-            alert('Failed to send message');
-            }
-        }
         </script>
         {% endblock %}
     </body>
