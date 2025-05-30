@@ -525,3 +525,26 @@ def join_session(request, session_id):
     except Exception as e:
         print(f"Error in join_session: {str(e)}")
         return JsonResponse({'status': 'error', 'message': 'Failed to join session'}, status=500)
+
+@login_required
+def generate_agora_token(request, channel_name):
+    """Generate Agora token for video calling"""
+    try:
+        from .utils import generate_agora_token as gen_token
+        
+        # Get user ID for token generation
+        uid = request.user.id
+        
+        # Generate token
+        token = gen_token(channel_name, uid)
+        
+        return JsonResponse({
+            'token': token,
+            'channel': channel_name,
+            'uid': uid
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Failed to generate token: {str(e)}'
+        }, status=500)
