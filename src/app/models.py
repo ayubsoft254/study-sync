@@ -204,7 +204,7 @@ class Notification(models.Model):
 
 class Chat(models.Model):
     """
-    Chat system for mentors and mentees.
+    Chat room for mentors and mentees.
     """
     CHAT_TYPES = (
         ('private', 'Private'),
@@ -212,8 +212,27 @@ class Chat(models.Model):
     )
     chat_type = models.CharField(max_length=10, choices=CHAT_TYPES)
     participants = models.ManyToManyField(User, related_name='chats')
-    content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Chat ({self.chat_type})"
+        return f"Chat ({self.chat_type}) - {self.id}"
+
+    class Meta:
+        ordering = ['-updated_at']
+
+class Message(models.Model):
+    """
+    Individual messages within a chat.
+    """
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Message from {self.sender.username} in Chat {self.chat.id}"
+
+    class Meta:
+        ordering = ['created_at']
