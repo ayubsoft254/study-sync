@@ -13,6 +13,7 @@ admin.site.register(SessionAttendance)
 admin.site.register(MentorRating)
 admin.site.register(Notification)
 admin.site.register(Chat)
+admin.site.register(Message)
 
 
 
